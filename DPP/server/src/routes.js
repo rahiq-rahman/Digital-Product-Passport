@@ -3,6 +3,7 @@ const authRoutes = require('./modules/auth/auth.routes');
 const productRoutes = require('./modules/products/product.routes');
 const showroomRoutes = require('./modules/showroom/showroom.routes');
 const ownershipRoutes = require('./modules/ownership/ownership.routes');
+const repairRoutes = require('./modules/repairs/repair.routes');
 
 // Use auth routes
 router.use('/auth', authRoutes);
@@ -15,6 +16,9 @@ router.use('/showroom', showroomRoutes);
 
 // Use ownership routes
 router.use('/ownership', ownershipRoutes);
+
+// Use repair routes
+router.use('/repairs', repairRoutes);
 
 module.exports = router;
 
