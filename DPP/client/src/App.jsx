@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "../routes/ProtectedRoute";
 
 import Login from "../features/auth/Login";
@@ -12,44 +12,35 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/manufacturer"
-          element={
-            <ProtectedRoute allowedRoles={["MANUFACTURER"]}>
-              <ManufacturerDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/manufacturer" element={
+          <ProtectedRoute allowedRoles={["MANUFACTURER"]}>
+            <ManufacturerDashboard />
+          </ProtectedRoute>
+        } />
 
-        <Route
-          path="/showroom"
-          element={
-            <ProtectedRoute allowedRoles={["SHOWROOM"]}>
-              <ShowroomDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/showroom" element={
+          <ProtectedRoute allowedRoles={["SHOWROOM"]}>
+            <ShowroomDashboard />
+          </ProtectedRoute>
+        } />
 
-        <Route
-          path="/repair"
-          element={
-            <ProtectedRoute allowedRoles={["REPAIR"]}>
-              <RepairDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/repair" element={
+          <ProtectedRoute allowedRoles={["REPAIR"]}>
+            <RepairDashboard />
+          </ProtectedRoute>
+        } />
 
-        <Route
-          path="/customer"
-          element={
-            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
-              <CustomerDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/customer" element={
+          <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+            <CustomerDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
