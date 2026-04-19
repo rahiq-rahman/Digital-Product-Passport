@@ -52,20 +52,25 @@ const registerUser = async (data) => {
 };
 
 // Login logic
-const loginUser = async (phone, password) => {
-  const user = await findUserByPhone(phone);
-  if (!user) throw new Error('User not found');
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) throw new Error('Wrong password');
-
-  const token = jwt.sign(
-    { user_id: user.user_id, role: user.role_type },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
+const loginUser = async ({ phone, password }) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM users WHERE phone=$1',
+    [phone]
   );
 
-  return { token };
-};
+  if (rows.length === 0) throw new Error('User not found');
 
+  const user = rows[0];
+
+  // bcrypt compare (REAL check)
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error('Invalid password');
+
+  const token = jwt.sign(
+    { user_id: user.user_id, role: user.role },
+    process.env.JWT_SECRET
+  );
+
+  return { user, token };
+};
 module.exports = { registerUser, loginUser };

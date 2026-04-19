@@ -13,9 +13,16 @@ const register = async (req, res) => {
 // Controller for login route
 const login = async (req, res) => {
   try {
-    const { phone, password } = req.body;
-    const result = await loginUser(phone, password);
-    res.json(result);
+    const result = await loginUser(req.body);
+
+    res.json({
+      token: result.token,
+      user: {
+        user_id: result.user.user_id,
+        name: result.user.name,
+        role: result.user.role_type,
+      },
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
