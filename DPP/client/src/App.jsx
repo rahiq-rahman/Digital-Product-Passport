@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import ProtectedRoute from "../routes/ProtectedRoute";
 
-import Login from "./features/auth/Login";
-import Register from "./features/auth/Register";
-import ManufacturerDashboard from "./features/manufacturer/Dashboard";
-import ShowroomDashboard from "./features/showroom/Dashboard";
-import RepairDashboard from "./features/repair/Dashboard";
-import CustomerDashboard from "./features/customer/Dashboard";
+import Login from "../features/auth/Login";
+import Register from "../features/auth/Register";
+import ManufacturerDashboard from "../features/manufacturer/Dashboard";
+import ShowroomDashboard from "../features/showroom/Dashboard";
+import RepairDashboard from "../features/repair/Dashboard";
+import CustomerDashboard from "../features/customer/Dashboard";
 
 function App() {
   return (

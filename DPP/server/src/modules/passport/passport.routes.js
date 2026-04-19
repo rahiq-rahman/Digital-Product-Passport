@@ -5,7 +5,7 @@ const { verifyToken, checkRole } = require('../../middleware/auth.middleware');
 router.get(
   '/:product_id',
   verifyToken,
-  checkRole(['CUSTOMER']),
+  checkRole(['CUSTOMER', 'MANUFACTURER', 'SHOWROOM', 'REPAIR']),
   getPassport
 );
 
