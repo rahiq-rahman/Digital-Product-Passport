@@ -67,7 +67,7 @@ const loginUser = async ({ phone, password }) => {
   if (!isMatch) throw new Error('Invalid password');
 
   const token = jwt.sign(
-    { user_id: user.user_id, role: user.role },
+    { user_id: user.user_id, role: user.role_type },
     process.env.JWT_SECRET
   );
 

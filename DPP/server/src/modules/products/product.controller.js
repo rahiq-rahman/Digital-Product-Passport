@@ -1,4 +1,4 @@
-const { createProduct, fetchMyProducts } = require('./product.service');
+const { createProduct, fetchMyProducts, editProduct, removeProduct } = require('./product.service');
 
 const addProduct = async (req, res) => {
   try {
@@ -18,4 +18,22 @@ const getMyProducts = async (req, res) => {
   }
 };
 
-module.exports = { addProduct, getMyProducts };
+const updateProduct = async (req, res) => {
+  try {
+    const product = await editProduct(req.params.id, req.body, req.user);
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  try {
+    const product = await removeProduct(req.params.id, req.user);
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+module.exports = { addProduct, getMyProducts, updateProduct, deleteProduct };

@@ -8,7 +8,7 @@ const getPassportData = async (product_id) => {
   const ownershipQuery = `
     SELECT o.*, u.name
     FROM ownership o
-    JOIN users u ON o.owner_id = u.user_id
+    JOIN users u ON o.to_user_id = u.user_id
     WHERE o.product_id = $1
     ORDER BY o.transfer_date;
   `;
