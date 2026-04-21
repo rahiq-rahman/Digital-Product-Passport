@@ -1,4 +1,4 @@
-const { sendToShowroom, viewInventory } = require('./showroom.service');
+const { sendToShowroom, viewInventory, fetchAllShowrooms } = require('./showroom.service');
 
 const assignProduct = async (req, res) => {
   try {
@@ -19,4 +19,13 @@ const getInventory = async (req, res) => {
   }
 };
 
-module.exports = { assignProduct, getInventory };
+const getShowrooms = async (req, res) => {
+  try {
+    const data = await fetchAllShowrooms();
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+module.exports = { assignProduct, getInventory, getShowrooms };

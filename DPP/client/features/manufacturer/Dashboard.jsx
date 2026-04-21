@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../shared/DashboardLayout";
 import { addProduct, getMyProducts, sendToShowroom, updateProduct, deleteProduct } from "./manufacturer.api";
 import { getPassport } from "../customer/customer.api";
+import { getAllShowrooms } from "../showroom/showroom.api";
 
 const emptyForm = {
   serial_number: "",
@@ -262,6 +263,11 @@ function ProductForm({ form, setForm, onSubmit, onCancel, submitLabel, loading }
 }
 
 export default function ManufacturerDashboard() {
+
+  const [showrooms, setShowrooms] = useState([]);
+  const [selectedShowroom, setSelectedShowroom] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState("");
+
   const [products, setProducts] = useState([]);
   const [tab, setTab] = useState("products");
   const [form, setForm] = useState(emptyForm);
@@ -277,6 +283,11 @@ export default function ManufacturerDashboard() {
 
   const [editForm, setEditForm] = useState(emptyForm);
 
+  useEffect(() => {
+    loadProducts();
+    getAllShowrooms().then(res => setShowrooms(res.data)).catch(() => {});
+  }, []);
+
   const loadProducts = async () => {
     try {
       const res = await getMyProducts();
@@ -284,7 +295,6 @@ export default function ManufacturerDashboard() {
     } catch { }
   };
 
-  useEffect(() => { loadProducts(); }, []);
 
   const notify = (text, type = "success") => {
     setMessage({ text, type });
@@ -348,21 +358,24 @@ export default function ManufacturerDashboard() {
     }
   };
 
-  const handleSendToShowroom = async () => {
-    if (!assignProductId || !showroomId) {
-      notify("Please fill in both fields.", "error");
-      return;
-    }
-    try {
-      await sendToShowroom({ product_id: assignProductId, showroom_id: showroomId });
-      notify("Product sent to showroom!");
-      setAssignProductId("");
-      setShowroomId("");
-      loadProducts();
-    } catch (err) {
-      notify(err.response?.data?.error || "Error sending to showroom", "error");
-    }
-  };
+const handleSendToShowroom = async () => {
+  if (!selectedProductId || !selectedShowroom) {
+    notify("Please select both a product and a showroom.", "error");
+    return;
+  }
+  try {
+    await sendToShowroom({
+      product_id: selectedProductId,
+      showroom_id: selectedShowroom,
+    });
+    notify("Product sent to showroom!");
+    setSelectedProductId("");
+    setSelectedShowroom("");
+    loadProducts();
+  } catch (err) {
+    notify(err.response?.data?.error || "Error sending to showroom", "error");
+  }
+};
 
   const totalProducts = products.length;
   const soldProducts = products.filter(p => p.current_status === "SOLD").length;
@@ -415,35 +428,67 @@ export default function ManufacturerDashboard() {
 
       {/* Send to showroom */}
       <div style={{
-        background: "#fff", border: "1px solid #f1f5f9", borderRadius: 16,
-        padding: "20px 24px", marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-      }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 14 }}>Send product to showroom</p>
-        <div style={{ display: "flex", gap: 12 }}>
-          <input
-            style={{ flex: 1, padding: "10px 14px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 14, color: "#1e293b", background: "#f8fafc", outline: "none" }}
-            placeholder="Product ID"
-            value={assignProductId}
-            onChange={e => setAssignProductId(e.target.value)}
-          />
-          <input
-            style={{ flex: 1, padding: "10px 14px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 14, color: "#1e293b", background: "#f8fafc", outline: "none" }}
-            placeholder="Showroom user ID"
-            value={showroomId}
-            onChange={e => setShowroomId(e.target.value)}
-          />
-          <button onClick={handleSendToShowroom} style={{
-            padding: "10px 24px", borderRadius: 10, border: "none",
-            background: "#f59e0b", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: 14,
-            transition: "background 0.15s",
-          }}
-            onMouseEnter={e => e.target.style.background = "#d97706"}
-            onMouseLeave={e => e.target.style.background = "#f59e0b"}
-          >
-            Send
-          </button>
-        </div>
-      </div>
+  background: "#fff", border: "1px solid #f1f5f9", borderRadius: 16,
+  padding: "20px 24px", marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+}}>
+  <p style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 14 }}>
+    Send product to showroom
+  </p>
+  <div style={{ display: "flex", gap: 12 }}>
+
+    {/* Product dropdown */}
+    <select
+      style={{
+        flex: 1, padding: "10px 14px", border: "1px solid #e2e8f0",
+        borderRadius: 10, fontSize: 14, color: selectedProductId ? "#1e293b" : "#94a3b8",
+        background: "#f8fafc", outline: "none", cursor: "pointer",
+      }}
+      value={selectedProductId}
+      onChange={e => setSelectedProductId(e.target.value)}
+    >
+      <option value="">Select a product...</option>
+      {products
+        .filter(p => p.current_status === "CREATED")
+        .map(p => (
+          <option key={p.product_id} value={p.product_id}>
+            {p.product_name} — {p.serial_number}
+          </option>
+        ))}
+    </select>
+
+    {/* Showroom dropdown */}
+    <select
+      style={{
+        flex: 1, padding: "10px 14px", border: "1px solid #e2e8f0",
+        borderRadius: 10, fontSize: 14, color: selectedShowroom ? "#1e293b" : "#94a3b8",
+        background: "#f8fafc", outline: "none", cursor: "pointer",
+      }}
+      value={selectedShowroom}
+      onChange={e => setSelectedShowroom(e.target.value)}
+    >
+      <option value="">Select a showroom...</option>
+      {showrooms.map(s => (
+        <option key={s.user_id} value={s.user_id}>
+          {s.showroom_name} — {s.location}
+        </option>
+      ))}
+    </select>
+
+    <button
+      onClick={handleSendToShowroom}
+      style={{
+        padding: "10px 24px", borderRadius: 10, border: "none",
+        background: "#f59e0b", color: "#fff", fontWeight: 600,
+        cursor: "pointer", fontSize: 14, transition: "background 0.15s",
+        whiteSpace: "nowrap",
+      }}
+      onMouseEnter={e => e.target.style.background = "#d97706"}
+      onMouseLeave={e => e.target.style.background = "#f59e0b"}
+    >
+      Send
+    </button>
+  </div>
+</div>
 
       {/* Tabs */}
       <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.04)", overflow: "hidden" }}>

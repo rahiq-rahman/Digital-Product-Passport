@@ -1,9 +1,5 @@
 const router = require('express').Router();
-const {
-  assignProduct,
-  getInventory
-} = require('./showroom.controller');
-
+const { assignProduct, getInventory, getShowrooms } = require('./showroom.controller');
 const { verifyToken, checkRole } = require('../../middleware/auth.middleware');
 
 router.post(
@@ -18,6 +14,13 @@ router.get(
   verifyToken,
   checkRole(['SHOWROOM']),
   getInventory
+);
+
+router.get(
+  '/all',
+  verifyToken,
+  checkRole(['MANUFACTURER']),
+  getShowrooms
 );
 
 module.exports = router;

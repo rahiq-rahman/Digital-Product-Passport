@@ -20,4 +20,14 @@ const getInventoryByShowroom = async (showroom_id) => {
   return rows;
 };
 
-module.exports = { assignProductToShowroom, getInventoryByShowroom };
+const getAllShowrooms = async () => {
+  const { rows } = await pool.query(
+    `SELECT u.user_id, u.name, s.showroom_name, s.location
+     FROM users u
+     JOIN showroom s ON u.user_id = s.user_id
+     WHERE u.role_type = 'SHOWROOM'`
+  );
+  return rows;
+};
+
+module.exports = { assignProductToShowroom, getInventoryByShowroom, getAllShowrooms };
