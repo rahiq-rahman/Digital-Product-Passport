@@ -22,7 +22,7 @@ const insertProduct = async (data, manufacturer_id) => {
 
 const getProductsByManufacturer = async (manufacturer_id) => {
   const { rows } = await pool.query(
-    `SELECT * FROM products WHERE manufacturer_id = $1 ORDER BY created_at DESC`,
+    `SELECT * FROM products WHERE manufacturer_id = $1 ORDER BY manufacturing_date DESC`,
     [manufacturer_id]
   );
   return rows;
