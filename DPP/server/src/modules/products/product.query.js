@@ -55,6 +55,21 @@ const updateProductById = async (product_id, data, manufacturer_id) => {
 };
 
 const deleteProductById = async (product_id, manufacturer_id) => {
+
+  // Verify ownership first
+  const check = await pool.query(
+    `SELECT * FROM products WHERE product_id = $1 AND manufacturer_id = $2`,
+    [product_id, manufacturer_id]
+  );
+  if (!check.rows[0]) return null;
+
+  // Delete all dependent rows first
+  await pool.query(`DELETE FROM product_event      WHERE product_id = $1`, [product_id]);
+  await pool.query(`DELETE FROM showroom_inventory  WHERE product_id = $1`, [product_id]);
+  await pool.query(`DELETE FROM repair_record       WHERE product_id = $1`, [product_id]);
+  await pool.query(`DELETE FROM ownership           WHERE product_id = $1`, [product_id]);
+
+  // Now safe to delete the product
   const { rows } = await pool.query(
     `DELETE FROM products WHERE product_id = $1 AND manufacturer_id = $2 RETURNING *`,
     [product_id, manufacturer_id]
