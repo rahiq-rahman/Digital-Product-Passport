@@ -11,180 +11,88 @@ const emptyForm = {
   manufacturing_date: "", warranty: "", description: "",
 };
 
-const STATUS_META = {
-  CREATED:     { label: "Created",   color: "#2563eb", bg: "#eff6ff" },
-  IN_SHOWROOM: { label: "Showroom",  color: "#d97706", bg: "#fffbeb" },
-  SOLD:        { label: "Sold",      color: "#059669", bg: "#ecfdf5" },
-  IN_REPAIR:   { label: "In Repair", color: "#dc2626", bg: "#fef2f2" },
+const STATUS = {
+  CREATED:     { label: "Created",   color: "var(--blue)",  bg: "var(--blue-bg)",   dot: "var(--blue)"  },
+  IN_SHOWROOM: { label: "Showroom",  color: "var(--amber)", bg: "var(--amber-bg)",  dot: "var(--amber)" },
+  SOLD:        { label: "Sold",      color: "var(--green)", bg: "var(--green-bg)",  dot: "var(--green)" },
+  IN_REPAIR:   { label: "In Repair", color: "var(--red)",   bg: "var(--red-bg)",    dot: "var(--red)"   },
 };
 
-const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+function Toast({ toast }) {
+  if (!toast.text) return null;
+  return <div className={`toast ${toast.type === "error" ? "toast-err" : "toast-ok"}`}>{toast.text}</div>;
+}
 
-  .mfr * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Instrument Sans', sans-serif; }
-  .mfr { padding: 32px 36px; min-height: 100%; background: #f5f4f0; }
-
-  .stat-card {
-    background: #ffffff; border: 1px solid #ebe9e2; border-radius: 14px;
-    padding: 22px 24px; transition: box-shadow 0.18s, transform 0.18s; cursor: default;
-  }
-  .stat-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); transform: translateY(-1px); }
-
-  .tab-btn {
-    padding: 9px 20px; border-radius: 8px; border: none;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.14s; font-family: 'Instrument Sans', sans-serif;
-    letter-spacing: 0.01em;
-  }
-  .tab-on  { background: #111827; color: #ffffff; }
-  .tab-off { background: transparent; color: #6b7280; }
-  .tab-off:hover { background: #ebe9e2; color: #111827; }
-
-  .inp {
-    width: 100%; padding: 10px 13px; border: 1px solid #e5e3dc; border-radius: 9px;
-    background: #fafaf8; color: #111827; font-size: 14px; outline: none;
-    transition: border-color 0.14s, box-shadow 0.14s; font-family: 'Instrument Sans', sans-serif;
-  }
-  .inp::placeholder { color: #9ca3af; }
-  .inp:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); background: #fff; }
-  .inp option { background: #fff; color: #111827; }
-
-  .btn-primary {
-    padding: 10px 22px; border-radius: 9px; border: none;
-    background: #111827; color: #fff; font-weight: 600; font-size: 14px;
-    cursor: pointer; transition: all 0.14s; font-family: 'Instrument Sans', sans-serif;
-    white-space: nowrap;
-  }
-  .btn-primary:hover { background: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .btn-outline {
-    padding: 9px 18px; border-radius: 9px; border: 1px solid #e5e3dc;
-    background: #fff; color: #374151; font-weight: 500; font-size: 13px;
-    cursor: pointer; transition: all 0.14s; font-family: 'Instrument Sans', sans-serif;
-  }
-  .btn-outline:hover { border-color: #9ca3af; background: #fafaf8; }
-
-  .btn-xs-blue {
-    padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
-    border: 1px solid #bfdbfe; background: #eff6ff; color: #2563eb;
-    cursor: pointer; transition: all 0.12s; font-family: 'Instrument Sans', sans-serif;
-  }
-  .btn-xs-blue:hover { background: #dbeafe; border-color: #93c5fd; }
-
-  .btn-xs-amber {
-    padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
-    border: 1px solid #fde68a; background: #fffbeb; color: #d97706;
-    cursor: pointer; transition: all 0.12s; font-family: 'Instrument Sans', sans-serif;
-  }
-  .btn-xs-amber:hover { background: #fef3c7; border-color: #fbbf24; }
-
-  .btn-xs-red {
-    padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
-    border: 1px solid #fecaca; background: #fef2f2; color: #dc2626;
-    cursor: pointer; transition: all 0.12s; font-family: 'Instrument Sans', sans-serif;
-  }
-  .btn-xs-red:hover { background: #fee2e2; border-color: #f87171; }
-
-  .btn-danger-lg {
-    padding: 10px 22px; border-radius: 9px; border: 1px solid #fecaca;
-    background: #fef2f2; color: #dc2626; font-weight: 600; font-size: 14px;
-    cursor: pointer; font-family: 'Instrument Sans', sans-serif; transition: all 0.14s;
-  }
-  .btn-danger-lg:hover { background: #fee2e2; border-color: #f87171; }
-
-  .prod-row { border-bottom: 1px solid #f0efe9; transition: background 0.12s; }
-  .prod-row:last-child { border-bottom: none; }
-  .prod-row:hover { background: #fafaf8; }
-  .acts { opacity: 0; transition: opacity 0.14s; display: flex; gap: 6px; }
-  .prod-row:hover .acts { opacity: 1; }
-
-  .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-    backdrop-filter: blur(4px); display: flex; align-items: center;
-    justify-content: center; z-index: 1000;
-  }
-  .modal {
-    background: #fff; border: 1px solid #ebe9e2; border-radius: 18px;
-    width: 100%; max-width: 560px; overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-    animation: mIn 0.2s cubic-bezier(.34,1.4,.64,1);
-  }
-  @keyframes mIn { from { opacity:0; transform:scale(0.96) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
-
-  .toast {
-    position: fixed; top: 22px; right: 22px; z-index: 2000;
-    padding: 13px 18px; border-radius: 10px; font-size: 13px; font-weight: 500;
-    font-family: 'Instrument Sans', sans-serif;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    animation: tIn 0.2s ease;
-  }
-  @keyframes tIn { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:translateX(0); } }
-
-  .lbl { font-size: 11px; font-weight: 600; color: #6b7280; letter-spacing: 0.07em; text-transform: uppercase; display: block; margin-bottom: 7px; }
-  .sec-lbl { font-size: 10px; font-weight: 600; color: #9ca3af; letter-spacing: 0.09em; text-transform: uppercase; margin-bottom: 12px; }
-  .mono { font-family: 'DM Mono', monospace !important; }
-
-  .bar-bg { background: #f0efe9; border-radius: 3px; height: 3px; overflow: hidden; margin-top: 14px; }
-  .bar-fg { height: 100%; border-radius: 3px; transition: width 0.9s cubic-bezier(.4,0,.2,1); }
-
-  .psec { background: #fafaf8; border-radius: 10px; padding: 16px; border: 1px solid #ebe9e2; margin-bottom: 10px; }
-  .psec:last-child { margin-bottom: 0; }
-  .scroll { max-height: 56vh; overflow-y: auto; padding-right: 2px; }
-  .scroll::-webkit-scrollbar { width: 4px; }
-  .scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
-
-  .card { background: #ffffff; border: 1px solid #ebe9e2; border-radius: 14px; }
-`;
-
-function Modal({ title, subtitle, onClose, children }) {
+function Modal({ title, subtitle, onClose, wide, children }) {
   return (
     <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #ebe9e2", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className={`modal${wide ? " modal-lg" : ""}`}>
+        <div className="modal-head">
           <div>
-            <p style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>{title}</p>
-            {subtitle && <p style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>{subtitle}</p>}
+            <div className="modal-title">{title}</div>
+            {subtitle && <div className="modal-subtitle">{subtitle}</div>}
           </div>
-          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #ebe9e2", background: "#f5f4f0", cursor: "pointer", color: "#6b7280", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
-        <div style={{ padding: "24px" }}>{children}</div>
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );
 }
 
-function PForm({ form, setForm, onSubmit, onCancel, label, loading }) {
+function StatCard({ label, value, color, pct }) {
+  return (
+    <div className="stat-card">
+      <div className="fs-11 fw-600 text-4" style={{ letterSpacing: "0.07em", textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 36, fontWeight: 700, color, marginTop: 8, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div className="bar-bg"><div className="bar-fg" style={{ width: `${pct}%`, background: color }} /></div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const s = STATUS[status] || STATUS.CREATED;
+  return (
+    <span className="badge" style={{ color: s.color, background: s.bg }}>
+      <span className="badge-dot" style={{ background: s.dot }} />
+      {s.label}
+    </span>
+  );
+}
+
+function ProductForm({ form, setForm, onSubmit, onCancel, label, loading }) {
+  const fields = [
+    { lbl: "Product name *",    key: "product_name",       ph: "e.g. Samsung Galaxy S24",  mono: false },
+    { lbl: "Serial number *",   key: "serial_number",      ph: "e.g. SG24-001",             mono: true  },
+    { lbl: "Model number *",    key: "model_no",           ph: "e.g. SM-S921",              mono: true  },
+    { lbl: "Warranty (months)", key: "warranty",           ph: "e.g. 24", type: "number",  mono: false },
+  ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        {[
-          { lbl: "Product name *",    key: "product_name",       ph: "e.g. Samsung Galaxy S24",  mono: false },
-          { lbl: "Serial number *",   key: "serial_number",      ph: "e.g. SG24-001",             mono: true  },
-          { lbl: "Model number *",    key: "model_no",           ph: "e.g. SM-S921",              mono: true  },
-          { lbl: "Warranty (months)", key: "warranty",           ph: "e.g. 24", type: "number",  mono: false },
-        ].map(f => (
+      <div className="grid-2">
+        {fields.map(f => (
           <div key={f.key}>
             <label className="lbl">{f.lbl}</label>
             <input className={`inp${f.mono ? " mono" : ""}`} placeholder={f.ph} type={f.type || "text"}
               value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} />
           </div>
         ))}
-        <div style={{ gridColumn: "span 2" }}>
+        <div className="col-2">
           <label className="lbl">Manufacturing date</label>
           <input className="inp" type="date" value={form.manufacturing_date}
             onChange={e => setForm({ ...form, manufacturing_date: e.target.value })} />
         </div>
-        <div style={{ gridColumn: "span 2" }}>
+        <div className="col-2">
           <label className="lbl">Description</label>
-          <textarea className="inp" style={{ resize: "vertical", minHeight: 88 }}
-            placeholder="Specifications, features, notes..."
+          <textarea className="inp" placeholder="Specifications, features, notes..."
             value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
         </div>
       </div>
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
-        {onCancel && <button className="btn-outline" onClick={onCancel}>Cancel</button>}
-        <button className="btn-primary" onClick={onSubmit} disabled={loading}>{loading ? "Saving..." : label}</button>
+      <div className="form-actions">
+        {onCancel && <button className="btn btn-outline" onClick={onCancel}>Cancel</button>}
+        <button className="btn btn-dark" onClick={onSubmit} disabled={loading}>
+          {loading ? "Saving..." : label}
+        </button>
       </div>
     </div>
   );
@@ -192,55 +100,65 @@ function PForm({ form, setForm, onSubmit, onCancel, label, loading }) {
 
 function PassportModal({ passport, onClose }) {
   const p  = passport?.product;
-  const sm = STATUS_META[p?.current_status] || STATUS_META.CREATED;
+  const sm = STATUS[p?.current_status] || STATUS.CREATED;
   return (
-    <Modal title="Digital Product Passport" subtitle={p?.product_name} onClose={onClose}>
+    <Modal title="Digital Product Passport" subtitle={p?.product_name} onClose={onClose} wide>
       <div className="scroll">
-        <div className="psec">
-          <p className="sec-lbl">Product info</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px" }}>
-            {[["Name", p?.product_name, false], ["Serial", p?.serial_number, true], ["Model", p?.model_no, true], ["Warranty", p?.warranty ? `${p.warranty} mo.` : "—", false], ["Mfg. date", p?.manufacturing_date?.slice(0, 10) || "—", true]].map(([k, v, m]) => (
+        <div className="psec mb-10">
+          <div className="sec-lbl">Product info</div>
+          <div className="grid-2" style={{ gap: "10px 24px" }}>
+            {[["Name", p?.product_name, false], ["Serial", p?.serial_number, true],
+              ["Model", p?.model_no, true], ["Warranty", p?.warranty ? `${p.warranty} mo.` : "—", false],
+              ["Mfg. date", p?.manufacturing_date?.slice(0, 10) || "—", true]
+            ].map(([k, v, m]) => (
               <div key={k}>
-                <span style={{ fontSize: 11, color: "#9ca3af", display: "block", marginBottom: 3 }}>{k}</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#111827", fontFamily: m ? "'DM Mono',monospace" : "inherit" }}>{v || "—"}</span>
+                <div className="fs-11 text-4 mb-4">{k}</div>
+                <div className={`fs-13 fw-500 text-1${m ? " mono" : ""}`}>{v || "—"}</div>
               </div>
             ))}
             <div>
-              <span style={{ fontSize: 11, color: "#9ca3af", display: "block", marginBottom: 3 }}>Status</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: sm.color, background: sm.bg, padding: "3px 10px", borderRadius: 999 }}>{sm.label}</span>
+              <div className="fs-11 text-4 mb-4">Status</div>
+              <StatusBadge status={p?.current_status} />
             </div>
           </div>
-          {p?.description && <p style={{ fontSize: 13, color: "#6b7280", marginTop: 14, paddingTop: 14, borderTop: "1px solid #ebe9e2", lineHeight: 1.65 }}>{p.description}</p>}
+          {p?.description && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+              <div className="fs-13 text-3" style={{ lineHeight: 1.65 }}>{p.description}</div>
+            </div>
+          )}
         </div>
 
         {[
-          { title: "Ownership history", rows: passport?.ownership, empty: "No ownership records yet.", render: (o, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #ebe9e2" }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{o.name}</span>
-              <span className="mono" style={{ fontSize: 12, color: "#9ca3af" }}>{o.transfer_date?.slice(0, 10)}</span>
-            </div>
-          )},
-          { title: "Repair history", rows: passport?.repairs, empty: "No repairs recorded.", render: (r, i) => (
-            <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid #ebe9e2" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{r.issue}</span>
-                <span className="mono" style={{ fontSize: 12, color: "#9ca3af" }}>{r.created_at?.slice(0, 10)}</span>
+          { title: "Ownership history", rows: passport?.ownership, empty: "No ownership records yet.",
+            render: (o, i) => (
+              <div key={i} className="prow">
+                <span className="fs-13 fw-500 text-1">{o.name}</span>
+                <span className="mono fs-12 text-4">{o.transfer_date?.slice(0, 10)}</span>
               </div>
-              <span style={{ fontSize: 12, color: "#6b7280", marginTop: 3, display: "block" }}>{r.repairshop_name} · {r.repair_type} · {r.repair_price} BDT</span>
-            </div>
-          )},
-          { title: "Event timeline", rows: passport?.events, empty: "No events yet.", render: (e, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, padding: "7px 0", borderBottom: "1px solid #ebe9e2" }}>
-              <span className="mono" style={{ fontSize: 11, color: "#9ca3af", minWidth: 82 }}>{e.event_date?.slice(0, 10)}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", minWidth: 116, letterSpacing: "0.03em" }}>{e.event_type}</span>
-              <span style={{ fontSize: 13, color: "#6b7280" }}>{e.description}</span>
-            </div>
-          )},
+            )},
+          { title: "Repair history", rows: passport?.repairs, empty: "No repairs recorded.",
+            render: (r, i) => (
+              <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                <div className="between mb-4">
+                  <span className="fs-13 fw-500 text-1">{r.issue}</span>
+                  <span className="mono fs-12 text-4">{r.repair_date?.slice(0, 10) || "—"}</span>
+                </div>
+                <span className="fs-12 text-3">{r.repairshop_name} · {r.repair_type} · {r.repair_price} BDT</span>
+              </div>
+            )},
+          { title: "Event timeline", rows: passport?.events, empty: "No events yet.",
+            render: (e, i) => (
+              <div key={i} className="row gap-12" style={{ padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
+                <span className="mono fs-11 text-4" style={{ minWidth: 82 }}>{e.event_date?.slice(0, 10)}</span>
+                <span className="fs-11 fw-600" style={{ color: "var(--blue)", minWidth: 116, letterSpacing: "0.03em" }}>{e.event_type}</span>
+                <span className="fs-13 text-3">{e.description}</span>
+              </div>
+            )},
         ].map(sec => (
           <div key={sec.title} className="psec">
-            <p className="sec-lbl">{sec.title}</p>
+            <div className="sec-lbl">{sec.title}</div>
             {!sec.rows?.length
-              ? <p style={{ fontSize: 13, color: "#9ca3af" }}>{sec.empty}</p>
+              ? <div className="fs-13 text-4">{sec.empty}</div>
               : sec.rows.map(sec.render)}
           </div>
         ))}
@@ -303,7 +221,7 @@ export default function ManufacturerDashboard() {
 
   const handleSend = async () => {
     if (!selProd || !selShow) { notify("Select a product and a showroom.", "error"); return; }
-    try { await sendToShowroom({ product_id: selProd, showroom_id: selShow }); notify("Dispatched to showroom!"); setSelProd(""); setSelShow(""); load(); }
+    try { await sendToShowroom({ product_id: selProd, showroom_id: selShow }); notify("Dispatched!"); setSelProd(""); setSelShow(""); load(); }
     catch (err) { notify(err.response?.data?.error || "Error dispatching", "error"); }
   };
 
@@ -312,64 +230,44 @@ export default function ManufacturerDashboard() {
     catch (err) { notify(err.response?.data?.error || "Could not load passport", "error"); }
   };
 
-  const total   = products.length;
-  const inShow  = products.filter(p => p.current_status === "IN_SHOWROOM").length;
-  const sold    = products.filter(p => p.current_status === "SOLD").length;
-  const inRep   = products.filter(p => p.current_status === "IN_REPAIR").length;
+  const total  = products.length;
+  const inShow = products.filter(p => p.current_status === "IN_SHOWROOM").length;
+  const sold   = products.filter(p => p.current_status === "SOLD").length;
+  const inRep  = products.filter(p => p.current_status === "IN_REPAIR").length;
 
   return (
     <DashboardLayout title="Overview">
-      <style>{css}</style>
-      <div className="mfr">
-
-        {toast.text && (
-          <div className="toast" style={{
-            background: toast.type === "error" ? "#fef2f2" : "#f0fdf4",
-            border: `1px solid ${toast.type === "error" ? "#fecaca" : "#bbf7d0"}`,
-            color: toast.type === "error" ? "#dc2626" : "#059669",
-          }}>{toast.text}</div>
-        )}
+      <Toast toast={toast} />
+      <div className="page">
 
         {/* Header */}
-        <div style={{ marginBottom: 28 }}>
-          <p style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>
-            Product Management
-          </p>
-          <p style={{ fontSize: 14, color: "#6b7280", marginTop: 5 }}>
-            Register, track and dispatch products through the supply chain.
-          </p>
+        <div className="mb-28">
+          <div className="page-title">Product Management</div>
+          <div className="page-sub">Register, track and dispatch products through the supply chain.</div>
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 22 }}>
-          {[
-            { lbl: "Total products", val: total,  color: "#2563eb", pct: 100 },
-            { lbl: "In showroom",    val: inShow, color: "#d97706", pct: total ? (inShow/total)*100 : 0 },
-            { lbl: "Sold",           val: sold,   color: "#059669", pct: total ? (sold/total)*100 : 0 },
-            { lbl: "In repair",      val: inRep,  color: "#dc2626", pct: total ? (inRep/total)*100 : 0 },
-          ].map(s => (
-            <div key={s.lbl} className="stat-card">
-              <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.07em", textTransform: "uppercase" }}>{s.lbl}</p>
-              <p style={{ fontSize: 36, fontWeight: 700, color: s.color, marginTop: 8, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{s.val}</p>
-              <div className="bar-bg"><div className="bar-fg" style={{ width: `${s.pct}%`, background: s.color }} /></div>
-            </div>
-          ))}
+        <div className="grid-4 mb-20">
+          <StatCard label="Total products" value={total}  color="var(--blue)"  pct={100} />
+          <StatCard label="In showroom"    value={inShow} color="var(--amber)" pct={total ? (inShow/total)*100 : 0} />
+          <StatCard label="Sold"           value={sold}   color="var(--green)" pct={total ? (sold/total)*100 : 0} />
+          <StatCard label="In repair"      value={inRep}  color="var(--red)"   pct={total ? (inRep/total)*100 : 0} />
         </div>
 
         {/* Dispatch panel */}
-        <div className="card" style={{ padding: "20px 24px", marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 9, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="16" height="16" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <div className="panel mb-20">
+          <div className="row gap-12 mb-16">
+            <div className="panel-icon" style={{ background: "var(--blue-bg)" }}>
+              <svg width="16" height="16" fill="none" stroke="var(--blue)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Dispatch to showroom</p>
-              <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>Only products with status "Created" are available.</p>
+              <div className="fs-14 fw-600 text-1">Dispatch to showroom</div>
+              <div className="fs-12 text-4 mt-4">Only products with status "Created" are available.</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="row gap-10">
             <select className="inp" style={{ flex: 1 }} value={selProd} onChange={e => setSelProd(e.target.value)}>
               <option value="">Select product...</option>
               {products.filter(p => p.current_status === "CREATED").map(p => (
@@ -382,13 +280,13 @@ export default function ManufacturerDashboard() {
                 <option key={s.user_id} value={s.user_id}>{s.showroom_name} — {s.location}</option>
               ))}
             </select>
-            <button className="btn-primary" onClick={handleSend}>Dispatch</button>
+            <button className="btn btn-dark" onClick={handleSend}>Dispatch</button>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="card" style={{ overflow: "hidden" }}>
-          <div style={{ display: "flex", gap: 6, padding: "14px 16px", borderBottom: "1px solid #ebe9e2", background: "#fafaf8" }}>
+          <div className="tabs">
             <button className={`tab-btn ${tab === "products" ? "tab-on" : "tab-off"}`} onClick={() => setTab("products")}>
               All Products ({total})
             </button>
@@ -399,69 +297,64 @@ export default function ManufacturerDashboard() {
 
           {tab === "add" && (
             <div style={{ padding: 26 }}>
-              <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 20, lineHeight: 1.6 }}>
+              <div className="fs-13 text-3 mb-20" style={{ lineHeight: 1.6 }}>
                 Register a new product into the Digital Product Passport system. Fields marked * are required.
-              </p>
-              <PForm form={form} setForm={setForm} onSubmit={handleAdd} label="Register Product" loading={loading} />
+              </div>
+              <ProductForm form={form} setForm={setForm} onSubmit={handleAdd} label="Register Product" loading={loading} />
             </div>
           )}
 
           {tab === "products" && (
             products.length === 0 ? (
-              <div style={{ padding: 60, textAlign: "center" }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                  <svg width="22" height="22" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <div className="empty">
+                <div className="empty-icon" style={{ background: "var(--blue-bg)" }}>
+                  <svg width="22" height="22" fill="none" stroke="var(--blue)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
                   </svg>
                 </div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: "#374151" }}>No products yet</p>
-                <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 5 }}>Register your first product to get started.</p>
-                <button className="btn-primary" style={{ marginTop: 18 }} onClick={() => setTab("add")}>Register Product</button>
+                <div className="empty-title">No products yet</div>
+                <div className="empty-sub">Register your first product to get started.</div>
+                <button className="btn btn-dark mt-18" onClick={() => setTab("add")}>Register Product</button>
               </div>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <table className="tbl">
                 <thead>
-                  <tr style={{ background: "#fafaf8" }}>
+                  <tr>
                     {["Product", "Serial / Model", "Warranty", "Mfg. Date", "Status", ""].map(h => (
-                      <th key={h} style={{ padding: "11px 20px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map(p => {
-                    const sm = STATUS_META[p.current_status] || STATUS_META.CREATED;
-                    return (
-                      <tr key={p.product_id} className="prod-row">
-                        <td style={{ padding: "15px 20px" }}>
-                          <p style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{p.product_name}</p>
-                          {p.description && <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 3, maxWidth: 210, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.description}</p>}
-                        </td>
-                        <td style={{ padding: "15px 20px" }}>
-                          <p className="mono" style={{ fontSize: 13, color: "#374151" }}>{p.serial_number}</p>
-                          <p className="mono" style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{p.model_no}</p>
-                        </td>
-                        <td style={{ padding: "15px 20px" }}>
-                          <span style={{ fontSize: 13, color: "#6b7280" }}>{p.warranty ? `${p.warranty} mo.` : "—"}</span>
-                        </td>
-                        <td style={{ padding: "15px 20px" }}>
-                          <span className="mono" style={{ fontSize: 12, color: "#9ca3af" }}>{p.manufacturing_date?.slice(0, 10) || "—"}</span>
-                        </td>
-                        <td style={{ padding: "15px 20px" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 11px", borderRadius: 999, background: sm.bg, color: sm.color, display: "inline-flex", alignItems: "center", gap: 6, letterSpacing: "0.03em" }}>
-                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: sm.color }} />
-                            {sm.label}
-                          </span>
-                        </td>
-                        <td style={{ padding: "15px 20px" }}>
-                          <div className="acts">
-                            <button className="btn-xs-blue" onClick={() => handlePassport(p.product_id)}>Passport</button>
-                            <button className="btn-xs-amber" onClick={() => { setEditModal(p); setEditForm({ serial_number: p.serial_number, model_no: p.model_no, product_name: p.product_name, manufacturing_date: p.manufacturing_date?.slice(0,10)||"", warranty: p.warranty||"", description: p.description||"" }); }}>Edit</button>
-                            <button className="btn-xs-red" onClick={() => setDelModal(p)}>Delete</button>
+                  {products.map(p => (
+                    <tr key={p.product_id} className="tbl-row">
+                      <td>
+                        <div className="fs-14 fw-600 text-1">{p.product_name}</div>
+                        {p.description && (
+                          <div className="fs-12 text-4 mt-4" style={{ maxWidth: 210, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {p.description}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        )}
+                      </td>
+                      <td>
+                        <div className="mono fs-13 text-2">{p.serial_number}</div>
+                        <div className="mono fs-11 text-4 mt-4">{p.model_no}</div>
+                      </td>
+                      <td><span className="fs-13 text-3">{p.warranty ? `${p.warranty} mo.` : "—"}</span></td>
+                      <td><span className="mono fs-12 text-4">{p.manufacturing_date?.slice(0, 10) || "—"}</span></td>
+                      <td><StatusBadge status={p.current_status} /></td>
+                      <td>
+                        <div className="acts">
+                          <button className="btn btn-sm btn-blue" onClick={() => handlePassport(p.product_id)}>Passport</button>
+                          <button className="btn btn-sm btn-amber" onClick={() => {
+                            setEditModal(p);
+                            setEditForm({ serial_number: p.serial_number, model_no: p.model_no, product_name: p.product_name, manufacturing_date: p.manufacturing_date?.slice(0,10)||"", warranty: p.warranty||"", description: p.description||"" });
+                          }}>Edit</button>
+                          <button className="btn btn-sm btn-red" onClick={() => setDelModal(p)}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )
@@ -469,22 +362,24 @@ export default function ManufacturerDashboard() {
         </div>
       </div>
 
+      {/* Edit modal */}
       {editModal && (
         <Modal title="Edit Product" subtitle={editModal.product_name} onClose={() => setEditModal(null)}>
-          <PForm form={editForm} setForm={setEditForm} onSubmit={handleEdit} onCancel={() => setEditModal(null)} label="Save Changes" loading={loading} />
+          <ProductForm form={editForm} setForm={setEditForm} onSubmit={handleEdit} onCancel={() => setEditModal(null)} label="Save Changes" loading={loading} />
         </Modal>
       )}
 
+      {/* Delete modal */}
       {delModal && (
         <Modal title="Delete product?" onClose={() => setDelModal(null)}>
-          <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.7, marginBottom: 24 }}>
+          <div className="fs-14 text-3 mb-24" style={{ lineHeight: 1.7 }}>
             You are about to permanently delete{" "}
-            <span style={{ color: "#111827", fontWeight: 600 }}>{delModal.product_name}</span>.
+            <span className="fw-600 text-1">{delModal.product_name}</span>.
             This action cannot be undone.
-          </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button className="btn-outline" onClick={() => setDelModal(null)}>Cancel</button>
-            <button className="btn-danger-lg" onClick={handleDelete} disabled={loading}>
+          </div>
+          <div className="form-actions">
+            <button className="btn btn-outline" onClick={() => setDelModal(null)}>Cancel</button>
+            <button className="btn btn-red" style={{ padding: "10px 22px", fontSize: 14 }} onClick={handleDelete} disabled={loading}>
               {loading ? "Deleting..." : "Delete permanently"}
             </button>
           </div>
