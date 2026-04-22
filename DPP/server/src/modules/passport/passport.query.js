@@ -1,6 +1,7 @@
 const pool = require('../../config/db');
 
 const getPassportData = async (product_id) => {
+
   const productQuery = `
     SELECT * FROM products WHERE product_id = $1;
   `;
@@ -18,7 +19,7 @@ const getPassportData = async (product_id) => {
     FROM repair_record r
     JOIN users u ON r.repairshop_id = u.user_id
     WHERE r.product_id = $1
-    ORDER BY r.created_at;
+    ORDER BY r.repair_date DESC;
   `;
 
   const eventQuery = `
@@ -26,19 +27,19 @@ const getPassportData = async (product_id) => {
     FROM product_event e
     JOIN users u ON e.user_id = u.user_id
     WHERE e.product_id = $1
-    ORDER BY e.event_date;
+    ORDER BY e.timestamp DESC;
   `;
 
-  const product = await pool.query(productQuery, [product_id]);
-  const ownership = await pool.query(ownershipQuery, [product_id]);
-  const repairs = await pool.query(repairQuery, [product_id]);
-  const events = await pool.query(eventQuery, [product_id]);
+  const product  = await pool.query(productQuery,  [product_id]);
+  const ownership= await pool.query(ownershipQuery, [product_id]);
+  const repairs  = await pool.query(repairQuery,    [product_id]);
+  const events   = await pool.query(eventQuery,     [product_id]);
 
   return {
-    product: product.rows[0],
+    product:   product.rows[0],
     ownership: ownership.rows,
-    repairs: repairs.rows,
-    events: events.rows
+    repairs:   repairs.rows,
+    events:    events.rows
   };
 };
 
