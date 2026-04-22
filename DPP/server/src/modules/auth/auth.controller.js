@@ -17,14 +17,7 @@ const register = async (req, res) => {
 const verifyRegister = async (req, res) => {
   try {
     const result = await verifyRegisterOTP(req.body);
-    res.json({
-      token: result.token,
-      user: {
-        user_id: result.user.user_id,
-        name:    result.user.name,
-        role:    result.user.role_type,
-      },
-    });
+    res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -33,7 +26,7 @@ const verifyRegister = async (req, res) => {
 const login = async (req, res) => {
   try {
     const result = await loginUser(req.body);
-    res.json(result); // returns { message, email }
+    res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -42,14 +35,7 @@ const login = async (req, res) => {
 const verifyLogin = async (req, res) => {
   try {
     const result = await verifyLoginOTP(req.body);
-    res.json({
-      token: result.token,
-      user: {
-        user_id: result.user.user_id,
-        name:    result.user.name,
-        role:    result.user.role_type,
-      },
-    });
+    res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

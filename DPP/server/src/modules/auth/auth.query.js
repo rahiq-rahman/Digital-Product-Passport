@@ -10,6 +10,14 @@ const createUser = async (name, phone, email, password, role) => {
   return rows[0];
 };
 
+const findUserByEmail = async (email) => {
+  const { rows } = await pool.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [email.toLowerCase()]
+  );
+  return rows[0];
+};
+
 const findUserByPhone = async (phone) => {
   const { rows } = await pool.query(
     `SELECT * FROM users WHERE phone = $1`,
@@ -18,12 +26,4 @@ const findUserByPhone = async (phone) => {
   return rows[0];
 };
 
-const findUserByEmail = async (email) => {
-  const { rows } = await pool.query(
-    `SELECT * FROM users WHERE email = $1`,
-    [email]
-  );
-  return rows[0];
-};
-
-module.exports = { createUser, findUserByPhone, findUserByEmail };
+module.exports = { createUser, findUserByEmail, findUserByPhone };
