@@ -1,18 +1,15 @@
 const pool = require('../../config/db');
 
-// Database queries for auth
-const createUser = async (name, phone, password, role) => {
+const createUser = async (name, phone, email, password, role) => {
   const query = `
-    INSERT INTO users (name, phone, password, role_type)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO users (name, phone, email, password, role_type)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
-  const values = [name, phone, password, role];
-  const { rows } = await pool.query(query, values);
+  const { rows } = await pool.query(query, [name, phone, email, password, role]);
   return rows[0];
 };
 
-// Find user by phone number
 const findUserByPhone = async (phone) => {
   const { rows } = await pool.query(
     `SELECT * FROM users WHERE phone = $1`,
@@ -21,4 +18,12 @@ const findUserByPhone = async (phone) => {
   return rows[0];
 };
 
-module.exports = { createUser, findUserByPhone };
+const findUserByEmail = async (email) => {
+  const { rows } = await pool.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [email]
+  );
+  return rows[0];
+};
+
+module.exports = { createUser, findUserByPhone, findUserByEmail };

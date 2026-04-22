@@ -1,26 +1,28 @@
-const { registerUser, loginUser } = require('./auth.service');
+const {
+  registerUser,
+  verifyRegisterOTP,
+  loginUser,
+  verifyLoginOTP,
+} = require('./auth.service');
 
-// Controller for auth routes
 const register = async (req, res) => {
   try {
-    const user = await registerUser(req.body);
-    res.status(201).json(user);
+    const result = await registerUser(req.body);
+    res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
-// Controller for login route
-const login = async (req, res) => {
+const verifyRegister = async (req, res) => {
   try {
-    const result = await loginUser(req.body);
-
+    const result = await verifyRegisterOTP(req.body);
     res.json({
       token: result.token,
       user: {
         user_id: result.user.user_id,
-        name: result.user.name,
-        role: result.user.role_type,
+        name:    result.user.name,
+        role:    result.user.role_type,
       },
     });
   } catch (err) {
@@ -28,4 +30,29 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const login = async (req, res) => {
+  try {
+    const result = await loginUser(req.body);
+    res.json(result); // returns { message, email }
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const verifyLogin = async (req, res) => {
+  try {
+    const result = await verifyLoginOTP(req.body);
+    res.json({
+      token: result.token,
+      user: {
+        user_id: result.user.user_id,
+        name:    result.user.name,
+        role:    result.user.role_type,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+module.exports = { register, verifyRegister, login, verifyLogin };
