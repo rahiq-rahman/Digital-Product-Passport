@@ -12,9 +12,11 @@ const assignProductToShowroom = async (product_id, showroom_id) => {
 
 const getInventoryByShowroom = async (showroom_id) => {
   const { rows } = await pool.query(
-    `SELECT p.* FROM showroom_inventory si
+    `SELECT p.*, si.status as inventory_status
+     FROM showroom_inventory si
      JOIN products p ON si.product_id = p.product_id
-     WHERE si.showroom_id = $1 AND si.status = 'IN_SHOWROOM'`,
+     WHERE si.showroom_id = $1
+     ORDER BY si.inventory_id DESC`,
     [showroom_id]
   );
   return rows;

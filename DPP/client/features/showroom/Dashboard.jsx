@@ -83,8 +83,8 @@ export default function ShowroomDashboard() {
   };
 
   const total = inventory.length;
-  const sold  = inventory.filter(p => p.current_status === "SOLD").length;
-  const avail = inventory.filter(p => p.current_status === "IN_SHOWROOM").length;
+  const sold  = inventory.filter(p => p.inventory_status === "SOLD").length;
+  const avail = inventory.filter(p => p.inventory_status === "IN_SHOWROOM").length;
 
   return (
     <DashboardLayout title="Inventory">
@@ -146,9 +146,9 @@ export default function ShowroomDashboard() {
                     <td>
                       <span className="fs-13 text-3">{p.warranty ? `${p.warranty} mo.` : "—"}</span>
                     </td>
-                    <td><StatusBadge status={p.current_status} /></td>
+                    <td><StatusBadge status={p.inventory_status} /></td>
                     <td>
-                      {p.current_status === "IN_SHOWROOM" && (
+                      {p.inventory_status === "IN_SHOWROOM" && (
                         <div className="acts">
                           <button className="btn btn-sm btn-green" onClick={() => setSellModal(p)}>
                             Sell to Customer
