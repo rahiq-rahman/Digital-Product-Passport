@@ -8,7 +8,6 @@ const getOwnedProducts = async (user_id) => {
      JOIN products p ON o.product_id = p.product_id
      WHERE o.to_user_id = $1
        AND o.transfer_status = 'COMPLETED'
-       AND p.current_status = 'SOLD'
        AND o.ownership_id = (
          SELECT MAX(o2.ownership_id)
          FROM ownership o2
