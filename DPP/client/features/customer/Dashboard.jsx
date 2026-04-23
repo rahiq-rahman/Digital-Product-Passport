@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "../shared/DashboardLayout";
-import { getPassport } from "./customer.api";
+import { getMyProducts, getMyPassport, transferProduct } from "./customer.api";
 
 const STATUS = {
+  SOLD:        { label: "Owned",     color: "var(--green)", bg: "var(--green-bg)" },
   CREATED:     { label: "Created",   color: "var(--blue)",  bg: "var(--blue-bg)"  },
   IN_SHOWROOM: { label: "Showroom",  color: "var(--amber)", bg: "var(--amber-bg)" },
-  SOLD:        { label: "Sold",      color: "var(--green)", bg: "var(--green-bg)" },
   IN_REPAIR:   { label: "In Repair", color: "var(--red)",   bg: "var(--red-bg)"   },
 };
 
@@ -24,202 +24,387 @@ function StatusBadge({ status }) {
   );
 }
 
-function Section({ title, children }) {
+function Modal({ title, subtitle, onClose, wide, children }) {
   return (
-    <div className="card" style={{ overflow: "hidden" }}>
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", background: "#fafaf8" }}>
-        <div className="fs-13 fw-600 text-1">{title}</div>
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={`modal${wide ? " modal-lg" : ""}`}>
+        <div className="modal-head">
+          <div>
+            <div className="modal-title">{title}</div>
+            {subtitle && <div className="modal-subtitle">{subtitle}</div>}
+          </div>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">{children}</div>
       </div>
-      <div style={{ padding: "0 20px" }}>{children}</div>
     </div>
   );
 }
 
-function EmptyRow({ text }) {
-  return <div className="fs-13 text-4" style={{ padding: "16px 0" }}>{text}</div>;
+function PassportModal({ passport, onClose, onTransfer }) {
+  const p  = passport?.product;
+  const sm = STATUS[p?.current_status] || STATUS.SOLD;
+
+  return (
+    <Modal title="Digital Product Passport" subtitle={p?.product_name} onClose={onClose} wide>
+      <div className="scroll">
+
+        {/* Product summary */}
+        <div className="psec" style={{ marginBottom: 10 }}>
+          <div className="sec-lbl">Product info</div>
+          <div className="grid-2" style={{ gap: "10px 24px" }}>
+            {[
+              ["Name",      p?.product_name,                        false],
+              ["Serial",    p?.serial_number,                       true ],
+              ["Model",     p?.model_no,                            true ],
+              ["Warranty",  p?.warranty ? `${p.warranty} mo.` : "—", false],
+              ["Mfg. date", p?.manufacturing_date?.slice(0,10) || "—", true],
+            ].map(([k, v, m]) => (
+              <div key={k}>
+                <div className="fs-11 text-4 mb-4">{k}</div>
+                <div className={`fs-13 fw-500 text-1${m ? " mono" : ""}`}>{v || "—"}</div>
+              </div>
+            ))}
+            <div>
+              <div className="fs-11 text-4 mb-4">Status</div>
+              <StatusBadge status={p?.current_status} />
+            </div>
+          </div>
+          {p?.description && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+              <div className="fs-13 text-3" style={{ lineHeight: 1.65 }}>{p.description}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Ownership */}
+        <div className="psec" style={{ marginBottom: 10 }}>
+          <div className="sec-lbl">Ownership history</div>
+          {!passport?.ownership?.length
+            ? <div className="fs-13 text-4">No records.</div>
+            : passport.ownership.map((o, i) => (
+              <div key={i} className="prow">
+                <div className="row gap-10">
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--green-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="12" height="12" fill="none" stroke="var(--green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <span className="fs-13 fw-500 text-1">{o.name}</span>
+                </div>
+                <span className="mono fs-12 text-4">{o.transfer_date?.slice(0,10)}</span>
+              </div>
+            ))}
+        </div>
+
+        {/* Repairs */}
+        <div className="psec" style={{ marginBottom: 10 }}>
+          <div className="sec-lbl">Repair history</div>
+          {!passport?.repairs?.length
+            ? <div className="fs-13 text-4">No repairs recorded.</div>
+            : passport.repairs.map((r, i) => (
+              <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                <div className="between mb-6">
+                  <span className="fs-13 fw-500 text-1">{r.issue}</span>
+                  <span className="badge fs-10" style={{ color: "var(--red)", background: "var(--red-bg)" }}>{r.repair_type}</span>
+                </div>
+                <div className="row gap-10 fs-12 text-3">
+                  <span>{r.repairshop_name}</span>
+                  {r.repair_price && <><span style={{ color: "var(--border-2)" }}>·</span><span>{r.repair_price} BDT</span></>}
+                  {r.estimated_time && <><span style={{ color: "var(--border-2)" }}>·</span><span>{r.estimated_time}</span></>}
+                </div>
+              </div>
+            ))}
+        </div>
+
+        {/* Events */}
+        <div className="psec" style={{ marginBottom: 10 }}>
+          <div className="sec-lbl">Event timeline</div>
+          {!passport?.events?.length
+            ? <div className="fs-13 text-4">No events.</div>
+            : (
+              <div style={{ position: "relative", paddingLeft: 22 }}>
+                <div style={{ position: "absolute", left: 6, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
+                {passport.events.map((e, i) => (
+                  <div key={i} style={{ position: "relative", padding: "10px 0", borderBottom: i < passport.events.length - 1 ? "1px solid var(--border)" : "none" }}>
+                    <div style={{ position: "absolute", left: -16, top: 14, width: 8, height: 8, borderRadius: "50%", background: "var(--blue)", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--blue-border)" }} />
+                    <div className="between mb-4">
+                      <span className="fs-11 fw-700" style={{ color: "var(--blue)", letterSpacing: "0.04em" }}>{e.event_type}</span>
+                      <span className="mono fs-11 text-4">{e.event_date?.slice(0,10)}</span>
+                    </div>
+                    <div className="fs-13 text-3">{e.description}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+        </div>
+
+        {/* Transfer CTA inside passport */}
+        <button
+          className="btn btn-green"
+          style={{ width: "100%", justifyContent: "center", padding: "11px", marginTop: 4 }}
+          onClick={() => onTransfer(passport.product)}
+        >
+          Transfer ownership
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function TransferModal({ product, onClose, onSuccess }) {
+  const [email, setEmail]   = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState("");
+  const [done, setDone]     = useState(null);
+
+  const handleTransfer = async () => {
+    if (!email.trim()) { setError("Enter the recipient's email address."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Enter a valid email address."); return; }
+    setError(""); setLoading(true);
+    try {
+      const res = await transferProduct({ product_id: product.product_id, to_email: email });
+      setDone(res.data.recipient);
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.error || "Transfer failed");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal title="Transfer ownership" subtitle={product?.product_name} onClose={onClose}>
+      {done ? (
+        <div style={{ textAlign: "center", padding: "8px 0" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: "var(--green-bg)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <svg width="24" height="24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div className="fs-16 fw-600 text-1 mb-6">Transfer complete</div>
+          <div className="fs-14 text-3" style={{ lineHeight: 1.6 }}>
+            <span className="fw-600 text-1">{product?.product_name}</span> has been transferred to{" "}
+            <span className="fw-600 text-1">{done.name}</span>.
+          </div>
+          <button className="btn btn-outline" style={{ marginTop: 24, padding: "10px 24px" }} onClick={onClose}>
+            Done
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Product info */}
+          <div style={{ background: "var(--bg)", borderRadius: 10, padding: "14px 16px", border: "1px solid var(--border)", marginBottom: 20 }}>
+            <div className="grid-2" style={{ gap: "8px 20px" }}>
+              {[["Product", product?.product_name], ["Serial", product?.serial_number], ["Model", product?.model_no], ["Warranty", product?.warranty ? `${product.warranty} mo.` : "—"]].map(([k, v]) => (
+                <div key={k}>
+                  <div className="fs-11 text-4 mb-4">{k}</div>
+                  <div className="fs-13 fw-500 text-1">{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: "var(--amber-bg)", border: "1px solid var(--amber-border)", borderRadius: 9, padding: "11px 14px", marginBottom: 20, display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <svg width="15" height="15" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: 1 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <div className="fs-13" style={{ color: "var(--amber)", lineHeight: 1.5 }}>
+              This action is <strong>permanent</strong>. Once transferred you will no longer own this product.
+            </div>
+          </div>
+
+          {error && <div style={{ fontSize: 13, color: "var(--red)", background: "var(--red-bg)", border: "1px solid var(--red-border)", borderRadius: 8, padding: "10px 14px", marginBottom: 16 }}>{error}</div>}
+
+          <div className="mb-20">
+            <label className="lbl">Recipient email address</label>
+            <input className="inp" type="email" placeholder="recipient@example.com"
+              value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleTransfer()} />
+          </div>
+
+          <div className="form-actions">
+            <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+            <button className="btn btn-green" style={{ padding: "10px 22px", fontSize: 14 }}
+              onClick={handleTransfer} disabled={loading}>
+              {loading ? "Transferring..." : "Confirm transfer"}
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
+  );
 }
 
 export default function CustomerDashboard() {
-  const [passport, setPassport] = useState(null);
-  const [productId, setProductId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ text: "", type: "" });
+  const [products, setProducts]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [toast, setToast]             = useState({ text: "", type: "" });
+  const [passport, setPassport]       = useState(null);
+  const [passportLoading, setPassportLoading] = useState(false);
+  const [transferProduct, setTransferProduct] = useState(null);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [passportOpen, setPassportOpen] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try { const r = await getMyProducts(); setProducts(r.data); }
+    catch { notify("Could not load your products", "error"); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
 
   const notify = (text, type = "success") => {
     setToast({ text, type });
     setTimeout(() => setToast({ text: "", type: "" }), 3500);
   };
 
-  const fetchPassport = async () => {
-    if (!productId.trim()) { notify("Enter a product ID.", "error"); return; }
-    setLoading(true);
+  const handleViewPassport = async (product_id) => {
+    setPassportLoading(true);
     try {
-      const res = await getPassport(productId.trim());
-      setPassport(res.data);
+      const r = await getMyPassport(product_id);
+      setPassport(r.data);
+      setPassportOpen(true);
     } catch (err) {
       notify(err.response?.data?.error || "Could not load passport", "error");
-      setPassport(null);
-    } finally { setLoading(false); }
+    } finally { setPassportLoading(false); }
   };
 
-  const p = passport?.product;
+  const handleOpenTransfer = (product) => {
+    setTransferProduct(product);
+    setPassportOpen(false);
+    setPassport(null);
+    setShowTransfer(true);
+  };
+
+  const handleTransferSuccess = () => {
+    load();
+    notify("Ownership transferred successfully!");
+  };
+
+  const name = localStorage.getItem("name") || "there";
 
   return (
-    <DashboardLayout title="My Passport">
+    <DashboardLayout title="My Products">
       <Toast toast={toast} />
       <div className="page">
 
         {/* Header */}
         <div className="mb-28">
-          <div className="page-title">Digital Product Passport</div>
-          <div className="page-sub">View the full history of any product you own.</div>
+          <div className="page-title">Hello, {name.split(" ")[0]}</div>
+          <div className="page-sub">Here are all the products registered under your account.</div>
         </div>
 
-        {/* Search bar */}
-        <div className="panel mb-24 row gap-12">
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: "var(--green-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="16" height="16" fill="none" stroke="var(--green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-            </svg>
-          </div>
-          <input
-            className="inp" style={{ flex: 1 }}
-            placeholder="Enter product ID..."
-            value={productId}
-            onChange={e => setProductId(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && fetchPassport()}
-          />
-          <button className="btn btn-dark" onClick={fetchPassport} disabled={loading}>
-            {loading ? "Loading..." : "View Passport"}
-          </button>
-        </div>
-
-        {/* Passport content */}
-        {passport && p && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* Product summary card */}
-            <div className="card card-p">
-              <div className="between mb-20">
-                <div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>
-                    {p.product_name}
-                  </div>
-                  <div className="fs-13 text-4 mt-4 mono">{p.serial_number}</div>
-                </div>
-                <StatusBadge status={p.current_status} />
-              </div>
-
-              <div className="grid-4" style={{ gap: "12px 20px" }}>
-                {[
-                  ["Model",        p.model_no,                          true ],
-                  ["Warranty",     p.warranty ? `${p.warranty} mo.` : "—", false],
-                  ["Manufactured", p.manufacturing_date?.slice(0, 10) || "—", true ],
-                  ["Product ID",   `#${p.product_id}`,                  true ],
-                ].map(([k, v, m]) => (
-                  <div key={k}>
-                    <div className="fs-11 text-4 mb-4" style={{ letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 600 }}>{k}</div>
-                    <div className={`fs-13 fw-500 text-1${m ? " mono" : ""}`}>{v}</div>
-                  </div>
-                ))}
-              </div>
-
-              {p.description && (
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
-                  <div className="fs-11 fw-600 text-4 mb-6" style={{ letterSpacing: "0.07em", textTransform: "uppercase" }}>Description</div>
-                  <div className="fs-13 text-3" style={{ lineHeight: 1.65 }}>{p.description}</div>
-                </div>
-              )}
+        {/* Stats row */}
+        <div className="grid-3 mb-20">
+          {[
+            { label: "Products owned", value: products.length, color: "var(--green)", pct: 100 },
+            { label: "In repair",      value: products.filter(p => p.current_status === "IN_REPAIR").length, color: "var(--red)",   pct: products.length ? (products.filter(p => p.current_status === "IN_REPAIR").length / products.length) * 100 : 0 },
+            { label: "Total warranty", value: products.reduce((acc, p) => acc + (Number(p.warranty) || 0), 0) + " mo.", color: "var(--blue)", pct: 100 },
+          ].map(s => (
+            <div key={s.label} className="stat-card">
+              <div className="fs-11 fw-600 text-4" style={{ letterSpacing: "0.07em", textTransform: "uppercase" }}>{s.label}</div>
+              <div style={{ fontSize: 34, fontWeight: 700, color: s.color, marginTop: 8, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+              <div className="bar-bg"><div className="bar-fg" style={{ width: `${s.pct}%`, background: s.color }} /></div>
             </div>
+          ))}
+        </div>
 
-            {/* Ownership history */}
-            <Section title="Ownership history">
-              {!passport.ownership?.length ? (
-                <EmptyRow text="No ownership records." />
-              ) : passport.ownership.map((o, i) => (
-                <div key={i} className="prow">
-                  <div className="row gap-10">
-                    <div style={{ width: 30, height: 30, borderRadius: 7, background: "var(--green-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <svg width="13" height="13" fill="none" stroke="var(--green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                      </svg>
-                    </div>
-                    <span className="fs-13 fw-500 text-1">{o.name}</span>
-                  </div>
-                  <span className="mono fs-12 text-4">{o.transfer_date?.slice(0, 10)}</span>
-                </div>
-              ))}
-            </Section>
+        {/* Product list */}
+        <div className="card" style={{ overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", background: "#fafaf8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div className="fs-14 fw-600 text-1">My products</div>
+              <div className="fs-12 text-4 mt-4">Hover a row to view passport or transfer ownership.</div>
+            </div>
+            {passportLoading && (
+              <div className="fs-12 text-4" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 14, height: 14, border: "2px solid var(--border)", borderTop: "2px solid var(--green)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                Loading passport...
+              </div>
+            )}
+          </div>
 
-            {/* Repair history */}
-            <Section title="Repair history">
-              {!passport.repairs?.length ? (
-                <EmptyRow text="No repairs recorded." />
-              ) : passport.repairs.map((r, i) => (
-                <div key={i} style={{ padding: "14px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div className="between mb-6">
-                    <span className="fs-14 fw-600 text-1">{r.issue}</span>
-                    <span className="mono fs-12 text-4">{r.repair_date?.slice(0, 10) || "—"}</span>
-                  </div>
-                  <div className="row gap-10">
-                    <span className="fs-12 text-3">{r.repairshop_name}</span>
-                    <span style={{ color: "var(--border-2)" }}>·</span>
-                    <span className="badge" style={{ color: "var(--red)", background: "var(--red-bg)", fontSize: 10, padding: "2px 8px" }}>{r.repair_type}</span>
-                    {r.repair_price && (
-                      <>
-                        <span style={{ color: "var(--border-2)" }}>·</span>
-                        <span className="fs-12 fw-500 text-2">{r.repair_price} BDT</span>
-                      </>
-                    )}
-                    {r.estimated_time && (
-                      <>
-                        <span style={{ color: "var(--border-2)" }}>·</span>
-                        <span className="fs-12 text-3">{r.estimated_time}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </Section>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-            {/* Event timeline */}
-            <Section title="Event timeline">
-              {!passport.events?.length ? (
-                <EmptyRow text="No events recorded." />
-              ) : (
-                <div style={{ position: "relative", paddingLeft: 24 }}>
-                  <div style={{ position: "absolute", left: 7, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
-                  {passport.events.map((e, i) => (
-                    <div key={i} style={{ position: "relative", padding: "14px 0", borderBottom: i < passport.events.length - 1 ? "1px solid var(--border)" : "none" }}>
-                      <div style={{ position: "absolute", left: -17, top: 18, width: 9, height: 9, borderRadius: "50%", background: "var(--blue)", border: "2px solid white", boxShadow: "0 0 0 1px var(--blue-border)" }} />
-                      <div className="between mb-4">
-                        <span className="fs-11 fw-700" style={{ color: "var(--blue)", letterSpacing: "0.04em" }}>{e.event_type}</span>
-                        <span className="mono fs-11 text-4">{e.event_date?.slice(0, 10)}</span>
+          {loading ? (
+            <div className="empty">
+              <div style={{ width: 32, height: 32, border: "3px solid var(--border)", borderTop: "3px solid var(--green)", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto" }} />
+            </div>
+          ) : products.length === 0 ? (
+            <div className="empty">
+              <div className="empty-icon" style={{ background: "var(--green-bg)" }}>
+                <svg width="22" height="22" fill="none" stroke="var(--green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+                </svg>
+              </div>
+              <div className="empty-title">No products yet</div>
+              <div className="empty-sub">Products will appear here once a showroom transfers one to you.</div>
+            </div>
+          ) : (
+            <table className="tbl">
+              <thead>
+                <tr>
+                  {["Product", "Serial / Model", "Warranty", "Status", ""].map(h => <th key={h}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {products.map(p => (
+                  <tr key={p.product_id} className="tbl-row">
+                    <td>
+                      <div className="fs-14 fw-600 text-1">{p.product_name}</div>
+                      {p.description && (
+                        <div className="fs-12 text-4 mt-4" style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {p.description}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <div className="mono fs-13 text-2">{p.serial_number}</div>
+                      <div className="mono fs-11 text-4 mt-4">{p.model_no}</div>
+                    </td>
+                    <td>
+                      <span className="fs-13 text-3">{p.warranty ? `${p.warranty} mo.` : "—"}</span>
+                    </td>
+                    <td><StatusBadge status={p.current_status} /></td>
+                    <td>
+                      <div className="acts">
+                        <button className="btn btn-sm btn-blue"
+                          onClick={() => handleViewPassport(p.product_id)}
+                          disabled={passportLoading}>
+                          Passport
+                        </button>
+                        <button className="btn btn-sm btn-green"
+                          onClick={() => handleOpenTransfer(p)}>
+                          Transfer
+                        </button>
                       </div>
-                      <div className="fs-13 text-3">{e.description}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-          </div>
-        )}
-
-        {/* Empty state before search */}
-        {!passport && (
-          <div className="empty" style={{ padding: "80px 0" }}>
-            <div className="empty-icon" style={{ background: "var(--green-bg)" }}>
-              <svg width="24" height="24" fill="none" stroke="var(--green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>
-            </div>
-            <div className="empty-title">Enter a product ID to view its passport</div>
-            <div className="empty-sub">The passport shows the full lifecycle — manufacturing, ownership, and repair history.</div>
-          </div>
-        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
+
+      {/* Passport modal */}
+      {passportOpen && passport && (
+        <PassportModal
+          passport={passport}
+          onClose={() => { setPassportOpen(false); setPassport(null); }}
+          onTransfer={handleOpenTransfer}
+        />
+      )}
+
+      {/* Transfer modal */}
+      {showTransfer && transferProduct && (
+        <TransferModal
+          product={transferProduct}
+          onClose={() => { setShowTransfer(false); setTransferProduct(null); }}
+          onSuccess={handleTransferSuccess}
+        />
+      )}
     </DashboardLayout>
   );
 }
