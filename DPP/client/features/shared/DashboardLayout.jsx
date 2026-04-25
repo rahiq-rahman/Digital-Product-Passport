@@ -61,11 +61,11 @@ const ROLE_META = {
       { label: "Products", links: [
         { to: "/manufacturer/products", label: "All Products",     icon: "box"    },
         { to: "/manufacturer/register", label: "Register Product", icon: "plus"   },
-        { to: "/manufacturer/bulk",     label: "Bulk Register",    icon: "layers" },
+        // { to: "/manufacturer/bulk",     label: "Bulk Register",    icon: "layers" },
       ]},
       { label: "Dispatch", links: [
         { to: "/manufacturer/dispatch", label: "Dispatch",         icon: "send"   },
-        { to: "/manufacturer/bulk-dispatch", label: "Bulk Dispatch", icon: "layers" },
+        // { to: "/manufacturer/bulk-dispatch", label: "Bulk Dispatch", icon: "layers" },
       ]},
     ],
   },

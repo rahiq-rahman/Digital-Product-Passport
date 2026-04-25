@@ -5,20 +5,13 @@ import Login    from "../features/auth/Login";
 import Register from "../features/auth/Register";
 
 import ManufacturerDashboard from "../features/manufacturer/Dashboard";
-// import ManufacturerProducts  from "../features/manufacturer/Products";
-// import ManufacturerRegister  from "../features/manufacturer/RegisterProduct";
-// import ManufacturerBulk      from "../features/manufacturer/BulkRegister";
-// import ManufacturerDispatch  from "../features/manufacturer/Dispatch";
-// import ManufacturerBulkDispatch from "../features/manufacturer/BulkDispatch";
+import RegisterProduct       from "../features/manufacturer/RegisterProduct";
+import DispatchProduct       from "../features/manufacturer/DispatchProduct";
+import Products              from "../features/manufacturer/Products";
 
-import ShowroomDashboard  from "../features/showroom/Dashboard";
-// import ShowroomInventory  from "../features/showroom/Inventory";
-
-import RepairDashboard from "../features/repair/Dashboard";
-// import RepairJobs      from "../features/repair/Jobs";
-
+import ShowroomDashboard from "../features/showroom/Dashboard";
+import RepairDashboard   from "../features/repair/Dashboard";
 import CustomerDashboard from "../features/customer/Dashboard";
-// import CustomerPassport  from "../features/customer/PassportSearch";
 
 const MFR  = (el) => <ProtectedRoute allowedRoles={["MANUFACTURER"]}>{el}</ProtectedRoute>;
 const SHW  = (el) => <ProtectedRoute allowedRoles={["SHOWROOM"]}>{el}</ProtectedRoute>;
@@ -32,21 +25,24 @@ function App() {
         <Route path="/"         element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route path="/manufacturer"              element={MFR(<ManufacturerDashboard />)} />
-        {/* <Route path="/manufacturer/products"     element={MFR(<ManufacturerProducts />)} />
-        <Route path="/manufacturer/register"     element={MFR(<ManufacturerRegister />)} />
-        <Route path="/manufacturer/bulk"         element={MFR(<ManufacturerBulk />)} />
-        <Route path="/manufacturer/dispatch"     element={MFR(<ManufacturerDispatch />)} />
-        <Route path="/manufacturer/bulk-dispatch" element={MFR(<ManufacturerBulkDispatch />)} /> */}
+        {/* Manufacturer */}
+        <Route path="/manufacturer"          element={MFR(<ManufacturerDashboard />)} />
+        <Route path="/manufacturer/register" element={MFR(<RegisterProduct />)} />
+        {/* /manufacturer/bulk redirects to /manufacturer/register (tab handled internally) */}
+        {/* <Route path="/manufacturer/bulk"     element={MFR(<RegisterProduct />)} /> */}
+        <Route path="/manufacturer/dispatch" element={MFR(<DispatchProduct />)} />
+        {/* /manufacturer/bulk-dispatch redirects to /manufacturer/dispatch */}
+        {/* <Route path="/manufacturer/bulk-dispatch" element={MFR(<DispatchProduct />)} /> */}
+        <Route path="/manufacturer/products" element={MFR(<Products />)} />
 
-        <Route path="/showroom"           element={SHW(<ShowroomDashboard />)} />
-        {/* <Route path="/showroom/inventory" element={SHW(<ShowroomInventory />)} /> */}
+        {/* Showroom */}
+        <Route path="/showroom" element={SHW(<ShowroomDashboard />)} />
 
-        <Route path="/repair"       element={REP(<RepairDashboard />)} />
-        {/* <Route path="/repair/jobs"  element={REP(<RepairJobs />)} /> */}
+        {/* Repair */}
+        <Route path="/repair" element={REP(<RepairDashboard />)} />
 
-        <Route path="/customer"          element={CUST(<CustomerDashboard />)} />
-        {/* <Route path="/customer/passport" element={CUST(<CustomerPassport />)} /> */}
+        {/* Customer */}
+        <Route path="/customer" element={CUST(<CustomerDashboard />)} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
