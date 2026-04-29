@@ -4,16 +4,24 @@ import ProtectedRoute from "../routes/ProtectedRoute";
 import Login    from "../features/auth/Login";
 import Register from "../features/auth/Register";
 
+// Public — no auth required
+import PublicPassport from "../features/public/PublicPassport";
+import QRScanner      from "../features/public/QRScanner";
+
+// Manufacturer
 import ManufacturerDashboard from "../features/manufacturer/Dashboard";
 import RegisterProduct        from "../features/manufacturer/RegisterProduct";
 import DispatchProduct        from "../features/manufacturer/DispatchProduct";
 import Products               from "../features/manufacturer/Products";
 
+// Showroom
 import ShowroomDashboard from "../features/showroom/Dashboard";
 
+// Repair
 import RepairDashboard from "../features/repair/Dashboard";
-import RepairJobs      from "../features/repair/Repairjobs";
+import RepairJobs      from "../features/repair/Jobs";
 
+// Customer
 import CustomerDashboard from "../features/customer/Dashboard";
 
 const MFR  = (el) => <ProtectedRoute allowedRoles={["MANUFACTURER"]}>{el}</ProtectedRoute>;
@@ -25,8 +33,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth */}
         <Route path="/"         element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Public — accessible by anyone, no login required */}
+        <Route path="/p/:product_id" element={<PublicPassport />} />
+        <Route path="/scan"          element={<QRScanner />} />
 
         {/* Manufacturer */}
         <Route path="/manufacturer"               element={MFR(<ManufacturerDashboard />)} />

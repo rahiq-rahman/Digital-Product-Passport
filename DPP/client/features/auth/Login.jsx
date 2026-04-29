@@ -1,3 +1,4 @@
+// DPP/client/features/auth/Login.jsx
 import { useState } from "react";
 import { loginUser, verifyLoginOTP } from "./auth.api";
 import { saveAuth } from "./useAuth";
@@ -52,6 +53,23 @@ const css = `
   }
   .btn-dark:hover:not(:disabled) { background: #1f2937; }
   .btn-dark:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-scan {
+    width: 100%; padding: 11px; border-radius: 10px;
+    border: 1.5px solid #e5e3dc; background: #fafaf8;
+    color: #374151; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.14s;
+    font-family: 'Instrument Sans', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-scan:hover { border-color: #9ca3af; background: #f5f4f0; }
+
+  .divider-row {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0;
+  }
+  .divider-line { flex: 1; height: 1px; background: #ebe9e2; }
+  .divider-text { font-size: 12px; color: #9ca3af; font-weight: 500; }
+
   .btn-ghost {
     width: 100%; padding: 10px; border-radius: 10px;
     border: 1px solid #e5e3dc; background: transparent;
@@ -100,14 +118,14 @@ const mask = (email) => {
 };
 
 export default function Login() {
-  const [step, setStep]       = useState("credentials");
-  const [email, setEmail]     = useState("");
-  const [password, setPassword] = useState("");
+  const [step, setStep]           = useState("credentials");
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
   const [otpDigits, setOtpDigits] = useState(["","","","","",""]);
-  const [otpEmail, setOtpEmail]   = useState(""); // email returned by server
-  const [error, setError]     = useState("");
-  const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  const [otpEmail, setOtpEmail]   = useState("");
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [cooldown, setCooldown]   = useState(0);
   const navigate = useNavigate();
 
   const startCooldown = () => {
@@ -122,14 +140,11 @@ export default function Login() {
     try {
       const res = await loginUser({ email, password });
       const data = res.data;
-
       if (data.requireOTP) {
-        // Production — go to OTP step
         setOtpEmail(data.email);
         setStep("otp");
         startCooldown();
       } else {
-        // Dev mode — logged in immediately
         saveAuth(data);
         navigate(ROUTES[data.user.role] || "/");
       }
@@ -185,7 +200,6 @@ export default function Login() {
       <style>{css}</style>
       <div className="auth-shell">
         <div className="auth-card">
-
           <div className="auth-logo">
             <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -200,7 +214,7 @@ export default function Login() {
             </div>
           )}
 
-          {/* ── Credentials step ── */}
+          {/* ── Credentials ── */}
           {step === "credentials" && (
             <>
               <div className="auth-title">Welcome back</div>
@@ -226,13 +240,30 @@ export default function Login() {
                 </button>
               </div>
 
+              {/* Divider */}
+              <div className="divider-row">
+                <div className="divider-line" />
+                <span className="divider-text">or</span>
+                <div className="divider-line" />
+              </div>
+
+              {/* Scan QR — public, no login needed */}
+              <button className="btn-scan" onClick={() => navigate("/scan")}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                  <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h3M20 14v.01"/>
+                </svg>
+                Scan product QR code
+              </button>
+
               <p className="footer-txt">
                 No account? <Link to="/register" className="link">Register</Link>
               </p>
             </>
           )}
 
-          {/* ── OTP step ── */}
+          {/* ── OTP ── */}
           {step === "otp" && (
             <>
               <div className="auth-title">Check your email</div>
@@ -269,7 +300,6 @@ export default function Login() {
               </button>
             </>
           )}
-
         </div>
       </div>
     </>
