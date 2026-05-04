@@ -1,7 +1,7 @@
 // DPP/client/features/shared/components.jsx
 // Reusable UI building blocks shared across Showroom, Customer, and Repair dashboards.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Toast
@@ -403,10 +403,202 @@ export function SuccessScreen({ title, body, onClose, color = "var(--green)", bg
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PassportModal — shared full passport view
+// ─────────────────────────────────────────────────────────────────────────────
+// AI hooks used inside PassportModal
+// ─────────────────────────────────────────────────────────────────────────────
+const GRADE_META = {
+  Excellent: { color: "var(--green)",  bg: "var(--green-bg)",  border: "var(--green-border)",  icon: "★" },
+  Good:      { color: "var(--blue)",   bg: "var(--blue-bg)",   border: "var(--blue-border)",   icon: "✓" },
+  Fair:      { color: "var(--amber)",  bg: "var(--amber-bg)",  border: "var(--amber-border)",  icon: "~" },
+  Caution:   { color: "var(--red)",    bg: "var(--red-bg)",    border: "var(--red-border)",    icon: "!" },
+  Poor:      { color: "var(--purple)", bg: "var(--purple-bg)", border: "var(--purple-border)", icon: "✗" },
+};
+const BREAKDOWN_LABELS = {
+  lifecycle_integrity:       "Lifecycle",
+  ownership_pattern:         "Ownership",
+  repair_history:            "Repairs",
+  warranty_validity:         "Warranty",
+  registration_completeness: "Registration",
+};
+
+function usePassportAI(productId) {
+  const [aiData,    setAiData]    = useState(null);
+  const [aiLoading, setAiLoading] = useState(true);
+  const [aiError,   setAiError]   = useState(false);
+  const fetched = useRef(false);
+
+  useEffect(() => {
+    if (!productId || fetched.current) return;
+    fetched.current = true;
+    fetch(`http://localhost:5000/api/ai/analyze/${productId}`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(d => setAiData(d))
+      .catch(() => setAiError(true))
+      .finally(() => setAiLoading(false));
+  }, [productId]);
+
+  return { aiData, aiLoading, aiError };
+}
+
+// AI Summary strip
+function AISummaryStrip({ aiData, aiLoading, aiError }) {
+  const [displayed, setDisplayed] = useState("");
+  const [typing,    setTyping]    = useState(false);
+  const text = aiData?.summary || "";
+
+  useEffect(() => {
+    if (!text) return;
+    setDisplayed(""); setTyping(true);
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) { clearInterval(iv); setTyping(false); }
+    }, 16);
+    return () => clearInterval(iv);
+  }, [text]);
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg,#111827 0%,#1e3a5f 100%)",
+      borderRadius: 10, padding: "14px 16px", marginBottom: 10, position: "relative", overflow: "hidden",
+    }}>
+      {/* subtle glow */}
+      <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:"rgba(37,99,235,0.15)", pointerEvents:"none" }} />
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.18)", borderRadius:999, padding:"3px 9px", fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.9)", letterSpacing:"0.06em" }}>
+          <span style={{ width:5, height:5, borderRadius:"50%", background:aiLoading?"#fbbf24":"#34d399", display:"inline-block", animation: aiLoading ? "none" : "pp-pulse 2s infinite" }} />
+          AI SUMMARY
+        </span>
+        <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>Powered by DeepSeek</span>
+      </div>
+      {aiLoading ? (
+        <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"rgba(255,255,255,0.4)" }}>
+          <div style={{ width:14, height:14, border:"2px solid rgba(255,255,255,0.2)", borderTop:"2px solid rgba(255,255,255,0.6)", borderRadius:"50%", animation:"_spin 0.7s linear infinite" }} />
+          Generating summary…
+        </div>
+      ) : aiError ? (
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", fontStyle:"italic" }}>Summary unavailable.</div>
+      ) : (
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.92)", lineHeight:1.65, fontStyle:"italic" }}>
+          "{displayed}{typing && <span style={{ display:"inline-block", width:1, height:"1em", background:"#fff", marginLeft:2, verticalAlign:"text-bottom", animation:"_blink 0.8s step-end infinite" }} />}"
+        </div>
+      )}
+      <style>{`@keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:0.4}} @keyframes _blink{0%,100%{opacity:1}50%{opacity:0}}`}</style>
+    </div>
+  );
+}
+
+// Authenticity score strip
+function AIScoreStrip({ aiData, aiLoading, aiError }) {
+  const [animate, setAnimate] = useState(false);
+  const data = aiData?.score;
+
+  useEffect(() => {
+    if (data) setTimeout(() => setAnimate(true), 80);
+  }, [data]);
+
+  if (aiLoading) {
+    return (
+      <div className="psec" style={{ marginBottom:10 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <div className="sec-lbl" style={{ margin:0 }}>Authenticity Score</div>
+          <div style={{ width:14, height:14, border:"2px solid var(--border)", borderTop:"2px solid var(--blue)", borderRadius:"50%", animation:"_spin 0.7s linear infinite" }} />
+        </div>
+        {[90,70,80,60,85].map((w,i) => (
+          <div key={i} style={{ marginBottom:10 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+              <div style={{ width:w, height:10, background:"var(--bg)", borderRadius:4, animation:"_shimmer 1.5s infinite" }} />
+              <div style={{ width:32, height:10, background:"var(--bg)", borderRadius:4, animation:"_shimmer 1.5s infinite" }} />
+            </div>
+            <div style={{ height:5, background:"var(--bg)", borderRadius:3, animation:"_shimmer 1.5s infinite" }} />
+          </div>
+        ))}
+        <style>{`@keyframes _shimmer{0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5}}`}</style>
+      </div>
+    );
+  }
+
+  if (aiError || !data) return null;
+
+  const gm     = GRADE_META[data.grade] || GRADE_META.Fair;
+  const radius = 22;
+  const circ   = 2 * Math.PI * radius;
+  const dash   = (data.total / 100) * circ;
+  const flags  = (data.flags || []).filter(Boolean);
+
+  return (
+    <div className="psec" style={{ marginBottom:10 }}>
+      <div className="sec-lbl" style={{ marginBottom:10 }}>Authenticity Score</div>
+
+      {/* Score row */}
+      <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14, padding:"12px 14px", background:"var(--bg)", borderRadius:9, border:"1px solid var(--border)" }}>
+        {/* Ring */}
+        <div style={{ position:"relative", width:56, height:56, flexShrink:0 }}>
+          <svg width="56" height="56" viewBox="0 0 56 56" style={{ transform:"rotate(-90deg)" }}>
+            <circle cx="28" cy="28" r={radius} fill="none" stroke="var(--border)" strokeWidth="5" />
+            <circle cx="28" cy="28" r={radius} fill="none" stroke={gm.color} strokeWidth="5" strokeLinecap="round"
+              strokeDasharray={`${animate ? dash : 0} ${circ}`}
+              style={{ transition:"stroke-dasharray 1.3s cubic-bezier(0.4,0,0.2,1)" }}
+            />
+          </svg>
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+            <span style={{ fontSize:14, fontWeight:700, color:"var(--text-1)", lineHeight:1 }}>{data.total}</span>
+            <span style={{ fontSize:8, color:"var(--text-4)", fontWeight:600 }}>/100</span>
+          </div>
+        </div>
+        {/* Grade + verdict */}
+        <div style={{ flex:1 }}>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:999, background:gm.bg, border:`1px solid ${gm.border}`, color:gm.color, fontSize:11, fontWeight:700, marginBottom:6 }}>
+            {gm.icon} {data.grade}
+          </span>
+          <div className="fs-12 text-3" style={{ lineHeight:1.5 }}>{data.verdict}</div>
+        </div>
+      </div>
+
+      {/* Breakdown bars */}
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        {Object.entries(data.breakdown).map(([key, val]) => {
+          const pct = (val.score / val.max) * 100;
+          const bc  = pct >= 80 ? "var(--green)" : pct >= 55 ? "var(--blue)" : pct >= 35 ? "var(--amber)" : "var(--red)";
+          return (
+            <div key={key}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                <span className="fs-11 fw-600 text-2">{BREAKDOWN_LABELS[key] || key}</span>
+                <span className="fs-11 text-4 mono">{val.score}/{val.max}</span>
+              </div>
+              <div style={{ height:5, background:"var(--bg)", borderRadius:3, overflow:"hidden", border:"1px solid var(--border)" }}>
+                <div style={{ height:"100%", width: animate ? `${pct}%` : "0%", background:bc, borderRadius:3, transition:"width 1.2s cubic-bezier(0.4,0,0.2,1)" }} />
+              </div>
+              <div className="fs-11 text-4" style={{ marginTop:2 }}>{val.note}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Flags */}
+      {flags.length > 0 && (
+        <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:5 }}>
+          {flags.map((flag, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:7, background:"var(--red-bg)", border:"1px solid var(--red-border)", borderRadius:7, padding:"7px 10px", fontSize:11, color:"var(--red)", lineHeight:1.4 }}>
+              <svg width="12" height="12" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink:0, marginTop:1 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              {flag}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// PassportModal — shared full passport view with AI features
 // ─────────────────────────────────────────────────────────────────────────────
 export function PassportModal({ passport, onClose, footerAction = null }) {
   const p = passport?.product;
+  const { aiData, aiLoading, aiError } = usePassportAI(p?.product_id);
 
   return (
     <Modal title="Digital Product Passport" subtitle={p?.product_name} onClose={onClose} wide>
@@ -438,6 +630,12 @@ export function PassportModal({ passport, onClose, footerAction = null }) {
             </div>
           )}
         </div>
+
+        {/* ── AI Summary ── */}
+        <AISummaryStrip aiData={aiData} aiLoading={aiLoading} aiError={aiError} />
+
+        {/* ── Authenticity Score ── */}
+        <AIScoreStrip aiData={aiData} aiLoading={aiLoading} aiError={aiError} />
 
         {/* Ownership */}
         <div className="psec" style={{ marginBottom: 10 }}>

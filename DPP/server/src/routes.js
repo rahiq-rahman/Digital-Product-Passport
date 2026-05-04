@@ -9,6 +9,7 @@ const passportRoutes = require('./modules/passport/passport.routes');
 const customerRoutes = require('./modules/customer/customer.routes');
 const otpRoutes      = require('./modules/otp/otp.routes');
 const publicRoutes   = require('./modules/public/public.routes');
+const aiRoutes       = require('./modules/ai/ai.routes');
 
 router.use('/auth',      authRoutes);
 router.use('/products',  productRoutes);
@@ -18,9 +19,9 @@ router.use('/repairs',   repairRoutes);
 router.use('/passport',  passportRoutes);
 router.use('/customer',  customerRoutes);
 router.use('/otp',       otpRoutes);
-router.use('/public',    publicRoutes);   // ← no auth, accessible by anyone
+router.use('/public',    publicRoutes);
+router.use('/ai',        aiRoutes);
 
-// Test route
 router.get('/test', verifyToken, (req, res) => {
   res.json({ message: 'Authorized', user: req.user });
 });
