@@ -30,6 +30,28 @@ const BREAKDOWN_LABELS = {
   registration_completeness: "Registration",
 };
 
+const EVENT_LABELS = {
+  CREATED:            "Created",
+  ASSIGNED_TO_USER:   "Assigned to User",
+  SOLD_TO_CUSTOMER:   "Sold to Customer",
+  MOVED_TO_SHOWROOM:  "Moved to Showroom",
+  RETURNED_TO_MANUFACTURER: "Returned to Manufacturer",
+  REPAIRED:           "Repaired",
+  RECEIVED:           "Received",
+  DISPATCHED:         "Dispatched",
+  REGISTERED:         "Registered",
+};
+
+function formatEventType(type) {
+  if (!type) return "Unknown event";
+  if (EVENT_LABELS[type]) return EVENT_LABELS[type];
+  return type
+    .toLowerCase()
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
@@ -596,7 +618,7 @@ export default function PublicPassport() {
                     <div style={{ paddingLeft: 4, display: "flex", alignItems: "flex-start", gap: 10, flex: 1 }}>
                       <div className="pp-event-dot" />
                       <div style={{ flex: 1 }}>
-                        <div className="pp-event-type">{e.event_type}</div>
+                        <div className="pp-event-type">{formatEventType(e.event_type)}</div>
                         <div className="pp-event-desc">{e.description}</div>
                       </div>
                     </div>

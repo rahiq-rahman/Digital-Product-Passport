@@ -19,6 +19,28 @@ const STATUS_OPTIONS = [
   { value: "IN_REPAIR",   label: "In Repair" },
 ];
 
+const EVENT_LABELS = {
+  CREATED:            "Created",
+  ASSIGNED_TO_USER:   "Assigned to User",
+  SOLD_TO_CUSTOMER:   "Sold to Customer",
+  MOVED_TO_SHOWROOM:  "Moved to Showroom",
+  RETURNED_TO_MANUFACTURER: "Returned to Manufacturer",
+  REPAIRED:           "Repaired",
+  RECEIVED:           "Received",
+  DISPATCHED:         "Dispatched",
+  REGISTERED:         "Registered",
+};
+
+function formatEventType(type) {
+  if (!type) return "Unknown event";
+  if (EVENT_LABELS[type]) return EVENT_LABELS[type];
+  return type
+    .toLowerCase()
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const s = STATUS[status] || STATUS.CREATED;
@@ -332,7 +354,7 @@ function PassportModal({ passport, onClose }) {
                 : passport.events.map((e, i) => (
                   <div key={i} className="row gap-12" style={{ padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
                     <span className="mono fs-11 text-4" style={{ minWidth: 82 }}>{e.event_date?.slice(0, 10)}</span>
-                    <span className="fs-11 fw-600" style={{ color: "var(--blue)", minWidth: 116, letterSpacing: "0.03em" }}>{e.event_type}</span>
+                    <span className="fs-11 fw-600" style={{ color: "var(--blue)", minWidth: 116, letterSpacing: "0.03em" }}>{formatEventType(e.event_type)}</span>
                     <span className="fs-13 text-3">{e.description}</span>
                   </div>
                 ))}
