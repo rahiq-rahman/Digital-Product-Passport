@@ -25,10 +25,26 @@ const userPayload = (user, token) => ({
 
 // ── Register (step 1) ──────────────────────────────────────────────
 const registerUser = async (data) => {
-  const { name, phone, email, password, role } = data;
+  const { name, phone, email, password, role, category, roleDetails = {} } = data;
 
   if (!email) throw new Error('Email is required');
   if (!name || !password || !role) throw new Error('All fields are required');
+
+  // Validate role-specific required fields
+  const requiredFields = {
+    MANUFACTURER: ['company_name', 'factory_name', 'license_no'],
+    SHOWROOM: ['showroom_name', 'location', 'trade_license'],
+    REPAIR: ['shop_name', 'location', 'certificate_no'],
+    CUSTOMER: [] // No additional required fields for customer
+  };
+
+  if (requiredFields[role]) {
+    for (const field of requiredFields[role]) {
+      if (!roleDetails[field] || !roleDetails[field].trim()) {
+        throw new Error(`${field.replace('_', ' ')} is required for ${role.toLowerCase()} registration`);
+      }
+    }
+  }
 
   const existingEmail = await findUserByEmail(email);
   if (existingEmail) throw new Error('Email already registered');
@@ -41,23 +57,23 @@ const registerUser = async (data) => {
   const hashed = await bcrypt.hash(password, 10);
   const user = await createUser(name, phone || null, email.toLowerCase(), hashed, role);
 
-  // Insert into role subtype table
+  // Insert into role subtype table using actual form data
   const subtypes = {
     MANUFACTURER: () => pool.query(
-      `INSERT INTO manufacturer (user_id, company_name, factory_name, license_no) VALUES ($1,$2,$3,$4)`,
-      [user.user_id, 'Default Company', 'Default Factory', 'LIC123']
+      `INSERT INTO manufacturer (user_id, company_name, factory_name, license_no, category) VALUES ($1,$2,$3,$4,$5)`,
+      [user.user_id, roleDetails.company_name, roleDetails.factory_name, roleDetails.license_no, category]
     ),
     SHOWROOM: () => pool.query(
-      `INSERT INTO showroom (user_id, showroom_name, location, trade_license) VALUES ($1,$2,$3,$4)`,
-      [user.user_id, 'Default Showroom', 'Dhaka', 'TL123']
+      `INSERT INTO showroom (user_id, showroom_name, location, trade_license, category) VALUES ($1,$2,$3,$4,$5)`,
+      [user.user_id, roleDetails.showroom_name, roleDetails.location, roleDetails.trade_license, category]
     ),
     REPAIR: () => pool.query(
-      `INSERT INTO repairshop (user_id, shop_name, location, certificate_no) VALUES ($1,$2,$3,$4)`,
-      [user.user_id, 'Default Repair', 'Dhaka', 'CERT123']
+      `INSERT INTO repairshop (user_id, shop_name, location, certificate_no, category) VALUES ($1,$2,$3,$4,$5)`,
+      [user.user_id, roleDetails.shop_name, roleDetails.location, roleDetails.certificate_no, category]
     ),
     CUSTOMER: () => pool.query(
-      `INSERT INTO customer (user_id, nid, address) VALUES ($1,$2,$3)`,
-      [user.user_id, 'NID123', 'Dhaka']
+      `INSERT INTO customer (user_id, nid, address, category) VALUES ($1,$2,$3,$4)`,
+      [user.user_id, roleDetails.nid || 'NID123', roleDetails.address || 'Dhaka', category]
     ),
   };
   if (subtypes[role]) await subtypes[role]();

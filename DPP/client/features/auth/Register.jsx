@@ -217,7 +217,7 @@ export default function Register() {
   const validateStep = () => {
     if (currentStep === "role") {
       if (!form.role) { setError("Select an account type."); return false; }
-      if (form.role !== "CUSTOMER" && !form.category) { setError("Select a category."); return false; }
+      if (!form.category) { setError("Select a category."); return false; }
     }
     if (currentStep === "account") {
       if (!form.name.trim()) { setError("Enter your full name."); return false; }
@@ -351,7 +351,7 @@ export default function Register() {
               <div className="role-grid" style={{ marginBottom: 20 }}>
                 {ROLES.map(r => (
                   <button key={r.value} className={`role-btn${form.role === r.value ? " sel" : ""}`}
-                    onClick={() => { set("role", r.value); if (r.value === "CUSTOMER") set("category", ""); }}>
+                    onClick={() => set("role", r.value)}>
                     <span className="role-icon">{r.icon}</span>
                     <span className="role-name">{r.label}</span>
                     <span className="role-sub">{r.sub}</span>
@@ -359,7 +359,7 @@ export default function Register() {
                 ))}
               </div>
 
-              {form.role !== "CUSTOMER" && (
+              {form.role && (
                 <>
                   <div className="divider" />
                   <div className="section-title" style={{ marginTop: 16 }}>Category</div>
