@@ -3,6 +3,7 @@ import { useState } from "react";
 import { loginUser, verifyLoginOTP } from "./auth.api";
 import { saveAuth } from "./useAuth";
 import { useNavigate, Link } from "react-router-dom";
+import { AppLogo } from "../shared/Logo";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
@@ -200,10 +201,9 @@ export default function Login() {
       <style>{css}</style>
       <div className="auth-shell">
         <div className="auth-card">
-          <div className="auth-logo">
-            <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
+          <div className="flex justify-center">
+
+          <AppLogo variant="mark" size={208} />
           </div>
 
           {step === "otp" && (

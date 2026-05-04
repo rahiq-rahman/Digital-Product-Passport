@@ -1,5 +1,6 @@
 // DPP/client/features/shared/DashboardLayout.jsx
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AppLogo } from "./Logo";
 import "../../src/styles/dashboard.css";
 
 const NAV_ICONS = {
@@ -78,17 +79,7 @@ export default function DashboardLayout({ title, children }) {
     <div className="shell">
       {/* ── Sidebar ── */}
       <aside className="sb">
-        <div className="sb-logo">
-          <div className="sb-logo-mark">
-            <svg width="17" height="17" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <div>
-            <div className="sb-logo-name">DPP System</div>
-            <div className="sb-logo-sub">Digital Product Passport</div>
-          </div>
-        </div>
+          <AppLogo size={202} />
 
         <div className="sb-role">
           <div className="sb-role-icon" style={{ background: meta.colorBg }}>

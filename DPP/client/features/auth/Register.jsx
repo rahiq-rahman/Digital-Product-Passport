@@ -2,6 +2,7 @@ import { useState } from "react";
 import { registerUser, verifyRegisterOTP } from "./auth.api";
 import { saveAuth } from "./useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import { AppLogo } from "../shared/Logo";
 
 const CATEGORIES = ["Electronics", "Furniture", "Textile", "Footwear"];
 
@@ -217,7 +218,7 @@ export default function Register() {
   const validateStep = () => {
     if (currentStep === "role") {
       if (!form.role) { setError("Select an account type."); return false; }
-      if (!form.category) { setError("Select a category."); return false; }
+      if (form.role !== "CUSTOMER" && !form.category) { setError("Select a category."); return false; }
     }
     if (currentStep === "account") {
       if (!form.name.trim()) { setError("Enter your full name."); return false; }
@@ -331,11 +332,6 @@ export default function Register() {
       <div className="auth-shell">
         <div className="auth-card">
 
-          <div className="auth-logo">
-            <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
 
           <ProgressBar />
 
@@ -359,7 +355,7 @@ export default function Register() {
                 ))}
               </div>
 
-              {form.role && (
+              {form.role !== "CUSTOMER" && (
                 <>
                   <div className="divider" />
                   <div className="section-title" style={{ marginTop: 16 }}>Category</div>

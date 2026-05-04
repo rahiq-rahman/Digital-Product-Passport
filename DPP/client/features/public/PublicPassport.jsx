@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { AppLogo } from "../shared/Logo";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -457,17 +458,7 @@ export default function PublicPassport() {
 
   const Header = () => (
     <div className="pp-header">
-      <div className="pp-logo">
-        <div className="pp-logo-mark">
-          <svg width="18" height="18" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-        <div>
-          <div className="pp-logo-name">DPP System</div>
-          <div className="pp-logo-sub">Digital Product Passport</div>
-        </div>
-      </div>
+      <AppLogo size={32} />
       <a href="/" className="pp-login-btn">
         <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
           <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/>
